@@ -222,32 +222,32 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   }, [config, sendMessage, fetchInitialStates, cleanupConnection, scheduleReconnect]);
 
   const callService = useCallback(async (domain: string, service: string, entity_id: string, data?: any) => {
-    if (!config?.baseUrl || !config?.token) {
-      setError('Configuration required for service calls');
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      setError('WebSocket connection required for service calls');
       return;
     }
 
     try {
-      const headers = getHeaders();
-      const response = await fetch(`${config.baseUrl}/api/services/${domain}/${service}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
+      const message = {
+        id: ++messageIdRef.current,
+        type: 'call_service',
+        domain,
+        service,
+        service_data: {
           entity_id,
           ...data,
-        }),
-      });
+        },
+      };
 
-      if (!response.ok) {
-        throw new Error(`Service call failed: ${response.status}`);
-      }
-
+      sendMessage(message);
+      console.log(`Service called: ${domain}.${service} for ${entity_id}`);
+      
       // No need to refresh entities manually - WebSocket will provide real-time updates
     } catch (err) {
       console.error('Service call error:', err);
       setError(err instanceof Error ? err.message : 'Service call failed');
     }
-  }, [config?.baseUrl, config?.token, getHeaders]);
+  }, [sendMessage]);
 
   const generateAlerts = useCallback((entities: Record<string, HAEntity>): Alert[] => {
     const newAlerts: Alert[] = [];
