@@ -39,7 +39,12 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
 
   const sendMessage = useCallback((message: any) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ ...message, id: messageIdRef.current++ }));
+      // Auth messages shouldn't have an id field
+      if (message.type === 'auth') {
+        wsRef.current.send(JSON.stringify(message));
+      } else {
+        wsRef.current.send(JSON.stringify({ ...message, id: messageIdRef.current++ }));
+      }
     }
   }, []);
 
