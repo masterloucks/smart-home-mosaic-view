@@ -18,10 +18,29 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
 
   const friendlyName = camera.attributes.friendly_name || camera.entity_id.replace(/_/g, ' ');
   
-  // Construct stream URL for Home Assistant camera (only if properly configured)
-  const streamUrl = baseUrl && token 
-    ? `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`
-    : null;
+  // Use Home Assistant's built-in camera URLs to avoid CORS issues
+  const getStreamUrl = () => {
+    if (!baseUrl) return null;
+    
+    // Method 1: Use entity_picture if available (static image)
+    if (camera.attributes.entity_picture) {
+      return `${baseUrl}${camera.attributes.entity_picture}`;
+    }
+    
+    // Method 2: Use camera proxy with camera's own access token
+    if (camera.attributes.access_token) {
+      return `${baseUrl}/api/camera_proxy/${camera.entity_id}?token=${camera.attributes.access_token}`;
+    }
+    
+    // Method 3: Fallback to proxy stream (may still have CORS issues)
+    if (token) {
+      return `${baseUrl}/api/camera_proxy/${camera.entity_id}?token=${token}`;
+    }
+    
+    return null;
+  };
+  
+  const streamUrl = getStreamUrl();
   
   const handleLoad = () => {
     setIsLoading(false);
