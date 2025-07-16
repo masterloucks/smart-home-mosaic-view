@@ -14,9 +14,11 @@ import {
   Wifi, 
   WifiOff, 
   RefreshCw,
-  Clock
+  Clock,
+  Bug
 } from 'lucide-react';
 import { DeviceGroup as DeviceGroupType, CameraEntity } from '@/types/homeassistant';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { config, setConfig, isConfigured } = useSecureConfig();
@@ -151,6 +153,17 @@ const Index = () => {
             {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {isConnected ? 'Connected' : 'Disconnected'}
           </Badge>
+          
+          <Link to="/connection-test">
+            <Button
+              variant="outline"
+              size="sm"
+              className="touch-target"
+            >
+              <Bug className="h-4 w-4 mr-2" />
+              Test Connection
+            </Button>
+          </Link>
           
           <Button
             variant="outline"
