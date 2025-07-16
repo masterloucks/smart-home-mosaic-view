@@ -15,49 +15,38 @@ interface CameraFeedProps {
 export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [currentStreamType, setCurrentStreamType] = useState<'webrtc' | 'mjpeg' | null>('webrtc');
 
   const friendlyName = camera.attributes.friendly_name || camera.entity_id.replace(/_/g, ' ');
 
-  const getStreamUrl = (type: 'webrtc' | 'mjpeg') => {
+  const getStreamUrl = () => {
     if (!baseUrl || !camera.entity_id || !token) return null;
 
-    if (type === 'webrtc') {
-      // WebRTC proxy for low-latency streaming (HA 2024.11+)
-      return `${baseUrl}/api/camera_proxy/${camera.entity_id}?token=${token}`;
-    } else {
-      // Traditional MJPEG stream fallback
-      return `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`;
-    }
+    // Use the reliable MJPEG stream endpoint
+    const streamUrl = `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`;
+    console.log(`Camera stream URL for ${camera.entity_id}:`, streamUrl);
+    return streamUrl;
   };
 
-  // Reset stream type when camera changes
+  // Reset when camera changes
   useEffect(() => {
-    setCurrentStreamType('webrtc');
+    console.log(`Camera ${camera.entity_id} state:`, camera.state);
     setIsLoading(true);
     setHasError(false);
-  }, [camera.entity_id]);
-  
+  }, [camera.entity_id, camera.state]);
   
   const handleLoad = () => {
+    console.log(`Camera ${camera.entity_id} loaded successfully`);
     setIsLoading(false);
     setHasError(false);
   };
 
-  const handleError = () => {
-    if (currentStreamType === 'webrtc') {
-      console.log(`WebRTC stream failed for ${camera.entity_id}, trying MJPEG fallback...`);
-      setCurrentStreamType('mjpeg');
-      setIsLoading(true);
-      setHasError(false);
-    } else {
-      console.log(`All stream types failed for ${camera.entity_id}`);
-      setIsLoading(false);
-      setHasError(true);
-    }
+  const handleError = (event: any) => {
+    console.error(`Camera ${camera.entity_id} failed to load:`, event);
+    setIsLoading(false);
+    setHasError(true);
   };
 
-  const currentStreamUrl = currentStreamType ? getStreamUrl(currentStreamType) : null;
+  const streamUrl = getStreamUrl();
 
   return (
     <Card className={cn('glass-effect overflow-hidden', className)}>
@@ -96,10 +85,9 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
             </div>
           )}
           
-          {camera.state === 'streaming' && currentStreamUrl && (
+          {camera.state === 'streaming' && streamUrl && (
             <img
-              key={`${camera.entity_id}-${currentStreamType}`}
-              src={currentStreamUrl}
+              src={streamUrl}
               alt={friendlyName}
               className="w-full h-full object-cover"
               onLoad={handleLoad}
@@ -108,7 +96,7 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
             />
           )}
           
-          {camera.state === 'streaming' && !currentStreamUrl && (
+          {camera.state === 'streaming' && !streamUrl && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted">
               <div className="flex flex-col items-center gap-2 text-destructive">
                 <AlertTriangle className="h-6 w-6" />
