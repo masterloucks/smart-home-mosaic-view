@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Camera, AlertTriangle, Loader2 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CameraEntity } from '@/types/homeassistant';
 import { cn } from '@/lib/utils';
 
@@ -15,17 +15,29 @@ interface CameraFeedProps {
 export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [currentStreamType, setCurrentStreamType] = useState<'webrtc' | 'mjpeg' | null>('webrtc');
 
   const friendlyName = camera.attributes.friendly_name || camera.entity_id.replace(/_/g, ' ');
 
-  const getStreamUrl = () => {
+  const getStreamUrl = (type: 'webrtc' | 'mjpeg') => {
     if (!baseUrl || !camera.entity_id || !token) return null;
 
-    // Preferred: MJPEG stream using long-lived token
-    return `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`;
+    if (type === 'webrtc') {
+      // WebRTC proxy for low-latency streaming (HA 2024.11+)
+      return `${baseUrl}/api/camera_proxy/${camera.entity_id}?token=${token}`;
+    } else {
+      // Traditional MJPEG stream fallback
+      return `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`;
+    }
   };
+
+  // Reset stream type when camera changes
+  useEffect(() => {
+    setCurrentStreamType('webrtc');
+    setIsLoading(true);
+    setHasError(false);
+  }, [camera.entity_id]);
   
-  const streamUrl = getStreamUrl();
   
   const handleLoad = () => {
     setIsLoading(false);
@@ -33,9 +45,19 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
   };
 
   const handleError = () => {
-    setIsLoading(false);
-    setHasError(true);
+    if (currentStreamType === 'webrtc') {
+      console.log(`WebRTC stream failed for ${camera.entity_id}, trying MJPEG fallback...`);
+      setCurrentStreamType('mjpeg');
+      setIsLoading(true);
+      setHasError(false);
+    } else {
+      console.log(`All stream types failed for ${camera.entity_id}`);
+      setIsLoading(false);
+      setHasError(true);
+    }
   };
+
+  const currentStreamUrl = currentStreamType ? getStreamUrl(currentStreamType) : null;
 
   return (
     <Card className={cn('glass-effect overflow-hidden', className)}>
@@ -74,9 +96,10 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
             </div>
           )}
           
-          {camera.state === 'streaming' && streamUrl && (
+          {camera.state === 'streaming' && currentStreamUrl && (
             <img
-              src={streamUrl}
+              key={`${camera.entity_id}-${currentStreamType}`}
+              src={currentStreamUrl}
               alt={friendlyName}
               className="w-full h-full object-cover"
               onLoad={handleLoad}
@@ -85,7 +108,7 @@ export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProp
             />
           )}
           
-          {camera.state === 'streaming' && !streamUrl && (
+          {camera.state === 'streaming' && !currentStreamUrl && (
             <div className="absolute inset-0 flex items-center justify-center bg-muted">
               <div className="flex flex-col items-center gap-2 text-destructive">
                 <AlertTriangle className="h-6 w-6" />
