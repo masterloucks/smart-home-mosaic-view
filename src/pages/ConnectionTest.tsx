@@ -47,99 +47,49 @@ const ConnectionTest = () => {
     setIsTestingConnection(true);
     const results = [];
 
-    // Test 1: Basic connectivity
-    try {
-      const response = await fetch(`${config.baseUrl}/api/`, {
-        headers: {
-          'Authorization': `Bearer ${config.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      results.push({
-        test: 'Basic API Connectivity',
-        status: response.ok ? 'success' : 'error',
-        message: response.ok 
-          ? `Connected successfully (Status: ${response.status})` 
-          : `HTTP Error: ${response.status} - ${response.statusText}`,
-        details: `URL: ${config.baseUrl}/api/`
-      });
-    } catch (err) {
-      results.push({
-        test: 'Basic API Connectivity',
-        status: 'error',
-        message: `Connection failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        details: `URL: ${config.baseUrl}/api/`
-      });
-    }
+    // Test 1: WebSocket Connection Status
+    results.push({
+      test: 'WebSocket Connection',
+      status: isConnected ? 'success' : 'error',
+      message: isConnected 
+        ? 'WebSocket connected successfully' 
+        : 'WebSocket connection failed',
+      details: `WebSocket URL: ${config.baseUrl.replace(/^http/, 'ws')}/api/websocket`
+    });
 
-    // Test 2: Authentication
-    try {
-      const response = await fetch(`${config.baseUrl}/api/config`, {
-        headers: {
-          'Authorization': `Bearer ${config.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        results.push({
-          test: 'Authentication',
-          status: 'success',
-          message: `Authenticated successfully`,
-          details: `Home Assistant version: ${data.version || 'Unknown'}, Location: ${data.location_name || 'Unknown'}`
-        });
-      } else {
-        results.push({
-          test: 'Authentication',
-          status: 'error',
-          message: `Authentication failed (Status: ${response.status})`,
-          details: response.status === 401 ? 'Invalid token' : 'Unknown authentication error'
-        });
-      }
-    } catch (err) {
-      results.push({
-        test: 'Authentication',
-        status: 'error',
-        message: `Authentication test failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        details: 'Could not verify token validity'
-      });
-    }
+    // Test 2: Entity Data Retrieval
+    const entityCount = Object.keys(entities).length;
+    results.push({
+      test: 'Entity Data',
+      status: entityCount > 0 ? 'success' : 'warning',
+      message: entityCount > 0 
+        ? `Successfully retrieved ${entityCount} entities`
+        : 'No entities retrieved yet',
+      details: entityCount > 0 
+        ? `Entities available: ${Object.keys(entities).slice(0, 5).join(', ')}${entityCount > 5 ? '...' : ''}`
+        : 'This may be normal if Home Assistant has no configured devices'
+    });
 
-    // Test 3: States endpoint
-    try {
-      const response = await fetch(`${config.baseUrl}/api/states`, {
-        headers: {
-          'Authorization': `Bearer ${config.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        results.push({
-          test: 'States Endpoint',
-          status: 'success',
-          message: `Retrieved ${data.length} entities`,
-          details: `Endpoint: ${config.baseUrl}/api/states`
-        });
-      } else {
-        results.push({
-          test: 'States Endpoint',
-          status: 'error',
-          message: `Failed to retrieve states (Status: ${response.status})`,
-          details: `Endpoint: ${config.baseUrl}/api/states`
-        });
-      }
-    } catch (err) {
-      results.push({
-        test: 'States Endpoint',
-        status: 'error',
-        message: `States test failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        details: `Endpoint: ${config.baseUrl}/api/states`
-      });
-    }
+    // Test 3: Configuration Validation
+    const urlValid = config.baseUrl.startsWith('http');
+    const tokenValid = config.token.length > 20;
+    
+    results.push({
+      test: 'Configuration',
+      status: (urlValid && tokenValid) ? 'success' : 'error',
+      message: (urlValid && tokenValid) 
+        ? 'Configuration appears valid'
+        : 'Configuration has issues',
+      details: `URL format: ${urlValid ? 'Valid' : 'Invalid'}, Token length: ${config.token.length} chars`
+    });
+
+    // Test 4: CORS Information (informational only)
+    results.push({
+      test: 'CORS Status',
+      status: 'info',
+      message: 'HTTP requests blocked by CORS policy (this is normal)',
+      details: 'Home Assistant requires CORS configuration for HTTP requests. WebSocket connections bypass this limitation.'
+    });
 
     setTestResults(results);
     setIsTestingConnection(false);
