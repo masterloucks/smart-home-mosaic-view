@@ -49,36 +49,11 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   }, []);
 
   const fetchInitialStates = useCallback(async () => {
-    if (!config?.baseUrl || !config?.token) {
-      setError('Configuration required');
-      setIsConnected(false);
-      setIsLoading(false);
-      return;
+    // Use WebSocket to get initial states instead of HTTP to avoid CORS issues
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      sendMessage({ type: 'get_states' });
     }
-
-    try {
-      setIsLoading(true);
-      const headers = getHeaders();
-      const response = await fetch(`${config.baseUrl}/api/states`, { headers });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: HAEntity[] = await response.json();
-      const entitiesMap = data.reduce((acc, entity) => {
-        acc[entity.entity_id] = entity;
-        return acc;
-      }, {} as Record<string, HAEntity>);
-
-      setEntities(entitiesMap);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch initial states');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [config?.baseUrl, config?.token, getHeaders]);
+  }, [sendMessage]);
 
   const connectWebSocket = useCallback(() => {
     if (!config?.baseUrl || !config?.token) {
@@ -143,7 +118,15 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
               break;
               
             case 'result':
-              // Handle command results if needed
+              // Handle get_states response
+              if (message.success && Array.isArray(message.result)) {
+                const entitiesMap = message.result.reduce((acc: Record<string, HAEntity>, entity: HAEntity) => {
+                  acc[entity.entity_id] = entity;
+                  return acc;
+                }, {});
+                setEntities(entitiesMap);
+                setIsLoading(false);
+              }
               break;
           }
         } catch (err) {
