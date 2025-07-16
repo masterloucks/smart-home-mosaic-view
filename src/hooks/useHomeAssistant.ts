@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { HAEntity, HAState, Alert } from '@/types/homeassistant';
 
 const HA_BASE_URL = 'http://192.168.0.159:8123';
-const LONG_LIVED_TOKEN = 'YOUR_LONG_LIVED_TOKEN_HERE'; // Replace with actual token
+const LONG_LIVED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjMWYyOTE5NDlkZWM0OTNhODQ4MGUyZWYxYjc1OTkyNSIsImlhdCI6MTc1MjYzMjQyOSwiZXhwIjoyMDY3OTkyNDI5fQ.hn_C0c12iszTo2Rnhj8Ds2PKjgkQcNYhbvUCd0kNuyQ'; // Replace with actual token
 
 interface HomeAssistantHook {
   entities: Record<string, HAEntity>;
