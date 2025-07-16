@@ -29,9 +29,10 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   const messageIdRef = useRef(1);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
+  const isReconnectingRef = useRef(false);
+  
   const maxReconnectAttempts = 5;
   const baseReconnectDelay = 1000; // Start with 1 second
-  const isReconnectingRef = useRef(false);
   const isConfigured = config !== null;
 
   const getHeaders = useCallback(() => {
