@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { HAEntity, HAState, Alert } from '@/types/homeassistant';
 
-const HA_BASE_URL = 'http://192.168.0.159:8123';
-const LONG_LIVED_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjMWYyOTE5NDlkZWM0OTNhODQ4MGUyZWYxYjc1OTkyNSIsImlhdCI6MTc1MjYzMjQyOSwiZXhwIjoyMDY3OTkyNDI5fQ.hn_C0c12iszTo2Rnhj8Ds2PKjgkQcNYhbvUCd0kNuyQ'; // Replace with actual token
+interface HomeAssistantConfig {
+  baseUrl: string;
+  token: string;
+}
 
 interface HomeAssistantHook {
   entities: Record<string, HAEntity>;
@@ -12,24 +14,38 @@ interface HomeAssistantHook {
   error: string | null;
   callService: (domain: string, service: string, entity_id: string, data?: any) => Promise<void>;
   refreshEntities: () => Promise<void>;
+  isConfigured: boolean;
 }
 
-export const useHomeAssistant = (): HomeAssistantHook => {
+export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssistantHook => {
   const [entities, setEntities] = useState<Record<string, HAEntity>>({});
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const headers = {
-    'Authorization': `Bearer ${LONG_LIVED_TOKEN}`,
-    'Content-Type': 'application/json',
-  };
+  const isConfigured = config !== null;
+
+  const getHeaders = useCallback(() => {
+    if (!config?.token) return {};
+    return {
+      'Authorization': `Bearer ${config.token}`,
+      'Content-Type': 'application/json',
+    };
+  }, [config?.token]);
 
   const fetchEntities = useCallback(async () => {
+    if (!config?.baseUrl || !config?.token) {
+      setError('Configuration required');
+      setIsConnected(false);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const response = await fetch(`${HA_BASE_URL}/api/states`, { headers });
+      const headers = getHeaders();
+      const response = await fetch(`${config.baseUrl}/api/states`, { headers });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -50,11 +66,17 @@ export const useHomeAssistant = (): HomeAssistantHook => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [config?.baseUrl, config?.token, getHeaders]);
 
   const callService = useCallback(async (domain: string, service: string, entity_id: string, data?: any) => {
+    if (!config?.baseUrl || !config?.token) {
+      setError('Configuration required for service calls');
+      return;
+    }
+
     try {
-      const response = await fetch(`${HA_BASE_URL}/api/services/${domain}/${service}`, {
+      const headers = getHeaders();
+      const response = await fetch(`${config.baseUrl}/api/services/${domain}/${service}`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -72,7 +94,7 @@ export const useHomeAssistant = (): HomeAssistantHook => {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Service call failed');
     }
-  }, [fetchEntities]);
+  }, [config?.baseUrl, config?.token, getHeaders, fetchEntities]);
 
   const generateAlerts = useCallback((entities: Record<string, HAEntity>): Alert[] => {
     const newAlerts: Alert[] = [];
@@ -118,13 +140,15 @@ export const useHomeAssistant = (): HomeAssistantHook => {
   }, []);
 
   useEffect(() => {
-    fetchEntities();
-    
-    // Set up polling for real-time updates (every 2 seconds)
-    const interval = setInterval(fetchEntities, 2000);
+    if (isConfigured) {
+      fetchEntities();
+      
+      // Set up polling for real-time updates (every 5 seconds for better performance)
+      const interval = setInterval(fetchEntities, 5000);
 
-    return () => clearInterval(interval);
-  }, [fetchEntities]);
+      return () => clearInterval(interval);
+    }
+  }, [fetchEntities, isConfigured]);
 
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
@@ -139,5 +163,6 @@ export const useHomeAssistant = (): HomeAssistantHook => {
     error,
     callService,
     refreshEntities: fetchEntities,
+    isConfigured,
   };
 };

@@ -8,19 +8,20 @@ import { cn } from '@/lib/utils';
 interface CameraFeedProps {
   camera: CameraEntity;
   className?: string;
+  baseUrl?: string;
+  token?: string;
 }
 
-const HA_BASE_URL = 'http://192.168.0.159:8123';
-const LONG_LIVED_TOKEN = 'YOUR_LONG_LIVED_TOKEN_HERE'; // Replace with actual token
-
-export const CameraFeed = ({ camera, className }: CameraFeedProps) => {
+export const CameraFeed = ({ camera, className, baseUrl, token }: CameraFeedProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
   const friendlyName = camera.attributes.friendly_name || camera.entity_id.replace(/_/g, ' ');
   
-  // Construct stream URL for Home Assistant camera
-  const streamUrl = `${HA_BASE_URL}/api/camera_proxy_stream/${camera.entity_id}?token=${LONG_LIVED_TOKEN}`;
+  // Construct stream URL for Home Assistant camera (only if properly configured)
+  const streamUrl = baseUrl && token 
+    ? `${baseUrl}/api/camera_proxy_stream/${camera.entity_id}?token=${token}`
+    : null;
   
   const handleLoad = () => {
     setIsLoading(false);
@@ -69,7 +70,7 @@ export const CameraFeed = ({ camera, className }: CameraFeedProps) => {
             </div>
           )}
           
-          {camera.state === 'streaming' && (
+          {camera.state === 'streaming' && streamUrl && (
             <img
               src={streamUrl}
               alt={friendlyName}
@@ -78,6 +79,15 @@ export const CameraFeed = ({ camera, className }: CameraFeedProps) => {
               onError={handleError}
               style={{ display: isLoading || hasError ? 'none' : 'block' }}
             />
+          )}
+          
+          {camera.state === 'streaming' && !streamUrl && (
+            <div className="absolute inset-0 flex items-center justify-center bg-muted">
+              <div className="flex flex-col items-center gap-2 text-destructive">
+                <AlertTriangle className="h-6 w-6" />
+                <span className="text-sm">Configuration required</span>
+              </div>
+            </div>
           )}
           
           {camera.state !== 'streaming' && !isLoading && (

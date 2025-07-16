@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useHomeAssistant } from '@/hooks/useHomeAssistant';
+import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { DeviceGroup } from '@/components/DeviceGroup';
 import { CameraFeed } from '@/components/CameraFeed';
 import { AlertsPanel } from '@/components/AlertsPanel';
+import { SecurityConfig } from '@/components/SecurityConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,6 +19,7 @@ import {
 import { DeviceGroup as DeviceGroupType, CameraEntity } from '@/types/homeassistant';
 
 const Index = () => {
+  const { config, setConfig, isConfigured } = useSecureConfig();
   const { 
     entities, 
     alerts, 
@@ -25,7 +28,7 @@ const Index = () => {
     error, 
     callService, 
     refreshEntities 
-  } = useHomeAssistant();
+  } = useHomeAssistant(config);
   
   const { toast } = useToast();
 
@@ -153,13 +156,26 @@ const Index = () => {
             variant="outline"
             size="sm"
             onClick={refreshEntities}
-            disabled={isLoading}
+            disabled={isLoading || !isConfigured}
             className="touch-target"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
+
+      {/* Security Configuration */}
+      {!isConfigured && (
+        <div className="mb-6">
+          <SecurityConfig onConfigSaved={setConfig} isConnected={isConnected} />
+        </div>
+      )}
+      
+      {isConfigured && !isConnected && (
+        <div className="mb-6">
+          <SecurityConfig onConfigSaved={setConfig} isConnected={isConnected} />
+        </div>
+      )}
 
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -197,6 +213,8 @@ const Index = () => {
                 <CameraFeed
                   key={camera.entity_id}
                   camera={camera}
+                  baseUrl={config?.baseUrl}
+                  token={config?.token}
                 />
               ))}
               
