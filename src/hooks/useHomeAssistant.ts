@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { HAEntity, HAState, Alert } from '@/types/homeassistant';
 
@@ -27,6 +28,10 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   const wsRef = useRef<WebSocket | null>(null);
   const messageIdRef = useRef(1);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 5;
+  const baseReconnectDelay = 1000; // Start with 1 second
+  const isReconnectingRef = useRef(false);
   const isConfigured = config !== null;
 
   const getHeaders = useCallback(() => {
@@ -51,9 +56,46 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   const fetchInitialStates = useCallback(async () => {
     // Use WebSocket to get initial states instead of HTTP to avoid CORS issues
     if (wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('Fetching initial states...');
       sendMessage({ type: 'get_states' });
     }
   }, [sendMessage]);
+
+  const cleanupConnection = useCallback(() => {
+    if (wsRef.current) {
+      console.log('Cleaning up WebSocket connection');
+      wsRef.current.close(1000, 'Component cleanup');
+      wsRef.current = null;
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    setIsConnected(false);
+    isReconnectingRef.current = false;
+  }, []);
+
+  const scheduleReconnect = useCallback(() => {
+    if (!config?.baseUrl || !config?.token || isReconnectingRef.current) {
+      return;
+    }
+
+    if (reconnectAttemptsRef.current >= maxReconnectAttempts) {
+      console.log('Max reconnection attempts reached');
+      setError('Failed to connect after multiple attempts');
+      return;
+    }
+
+    const delay = baseReconnectDelay * Math.pow(2, reconnectAttemptsRef.current);
+    console.log(`Scheduling reconnect attempt ${reconnectAttemptsRef.current + 1} in ${delay}ms`);
+    
+    reconnectTimeoutRef.current = setTimeout(() => {
+      if (config) {
+        reconnectAttemptsRef.current++;
+        connectWebSocket();
+      }
+    }, delay);
+  }, [config]);
 
   const connectWebSocket = useCallback(() => {
     if (!config?.baseUrl || !config?.token) {
@@ -61,39 +103,45 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
       return;
     }
 
-    // Clean up existing connection
-    if (wsRef.current) {
-      wsRef.current.close();
+    // Prevent multiple simultaneous connection attempts
+    if (isReconnectingRef.current) {
+      console.log('Connection attempt already in progress');
+      return;
     }
 
-    // Clear any existing reconnect timeout
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
+    isReconnectingRef.current = true;
+    cleanupConnection();
 
     try {
       // Convert HTTP URL to WebSocket URL
       const wsUrl = config.baseUrl.replace(/^http/, 'ws') + '/api/websocket';
+      console.log('Connecting to WebSocket:', wsUrl);
+      
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
+        console.log('WebSocket connected successfully');
+        isReconnectingRef.current = false;
+        reconnectAttemptsRef.current = 0; // Reset on successful connection
       };
 
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
+          console.log('WebSocket message received:', message.type);
           
           switch (message.type) {
             case 'auth_required':
-              // Send authentication
+              console.log('Authentication required, sending token...');
               sendMessage({ type: 'auth', access_token: config.token });
               break;
               
             case 'auth_ok':
+              console.log('Authentication successful');
               setIsConnected(true);
               setError(null);
+              setIsLoading(true);
               // Subscribe to state changes
               sendMessage({ type: 'subscribe_events', event_type: 'state_changed' });
               // Fetch initial states
@@ -101,8 +149,10 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
               break;
               
             case 'auth_invalid':
-              setError('Authentication failed');
+              console.error('Authentication failed');
+              setError('Authentication failed - check your access token');
               setIsConnected(false);
+              setIsLoading(false);
               break;
               
             case 'event':
@@ -120,11 +170,16 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
             case 'result':
               // Handle get_states response
               if (message.success && Array.isArray(message.result)) {
+                console.log(`Received ${message.result.length} entities`);
                 const entitiesMap = message.result.reduce((acc: Record<string, HAEntity>, entity: HAEntity) => {
                   acc[entity.entity_id] = entity;
                   return acc;
                 }, {});
                 setEntities(entitiesMap);
+                setIsLoading(false);
+              } else if (!message.success) {
+                console.error('Failed to get states:', message.error);
+                setError('Failed to retrieve entity states');
                 setIsLoading(false);
               }
               break;
@@ -137,27 +192,33 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
       ws.onclose = (event) => {
         console.log('WebSocket disconnected:', event.code, event.reason);
         setIsConnected(false);
+        isReconnectingRef.current = false;
         
-        // Attempt to reconnect after 5 seconds if not manually closed
-        if (event.code !== 1000 && config) {
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect...');
-            connectWebSocket();
-          }, 5000);
+        // Only attempt to reconnect for unexpected closures
+        if (event.code !== 1000 && config && reconnectAttemptsRef.current < maxReconnectAttempts) {
+          console.log('Unexpected closure, scheduling reconnect...');
+          scheduleReconnect();
+        } else if (event.code === 1000) {
+          console.log('WebSocket closed normally');
+        } else {
+          console.log('Max reconnection attempts reached or manual closure');
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket error occurred:', error);
         setError('WebSocket connection error');
         setIsConnected(false);
+        isReconnectingRef.current = false;
       };
 
     } catch (err) {
+      console.error('Failed to create WebSocket:', err);
       setError(err instanceof Error ? err.message : 'Failed to connect WebSocket');
       setIsConnected(false);
+      isReconnectingRef.current = false;
     }
-  }, [config, sendMessage, fetchInitialStates]);
+  }, [config, sendMessage, fetchInitialStates, cleanupConnection, scheduleReconnect]);
 
   const callService = useCallback(async (domain: string, service: string, entity_id: string, data?: any) => {
     if (!config?.baseUrl || !config?.token) {
@@ -182,6 +243,7 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
 
       // No need to refresh entities manually - WebSocket will provide real-time updates
     } catch (err) {
+      console.error('Service call error:', err);
       setError(err instanceof Error ? err.message : 'Service call failed');
     }
   }, [config?.baseUrl, config?.token, getHeaders]);
@@ -231,18 +293,15 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
 
   useEffect(() => {
     if (isConfigured) {
+      console.log('Configuration detected, connecting to WebSocket...');
       connectWebSocket();
       
       return () => {
-        if (wsRef.current) {
-          wsRef.current.close();
-        }
-        if (reconnectTimeoutRef.current) {
-          clearTimeout(reconnectTimeoutRef.current);
-        }
+        console.log('Cleaning up WebSocket connection on unmount');
+        cleanupConnection();
       };
     }
-  }, [connectWebSocket, isConfigured]);
+  }, [connectWebSocket, isConfigured, cleanupConnection]);
 
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
