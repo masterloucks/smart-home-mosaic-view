@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { HAEntity, HAState, Alert } from '@/types/homeassistant';
 
 interface HomeAssistantConfig {
@@ -23,7 +23,10 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
+  const wsRef = useRef<WebSocket | null>(null);
+  const messageIdRef = useRef(1);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isConfigured = config !== null;
 
   const getHeaders = useCallback(() => {
@@ -34,7 +37,13 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
     };
   }, [config?.token]);
 
-  const fetchEntities = useCallback(async () => {
+  const sendMessage = useCallback((message: any) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ ...message, id: messageIdRef.current++ }));
+    }
+  }, []);
+
+  const fetchInitialStates = useCallback(async () => {
     if (!config?.baseUrl || !config?.token) {
       setError('Configuration required');
       setIsConnected(false);
@@ -58,15 +67,109 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
       }, {} as Record<string, HAEntity>);
 
       setEntities(entitiesMap);
-      setIsConnected(true);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch entities');
-      setIsConnected(false);
+      setError(err instanceof Error ? err.message : 'Failed to fetch initial states');
     } finally {
       setIsLoading(false);
     }
   }, [config?.baseUrl, config?.token, getHeaders]);
+
+  const connectWebSocket = useCallback(() => {
+    if (!config?.baseUrl || !config?.token) {
+      setError('Configuration required');
+      return;
+    }
+
+    // Clean up existing connection
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+
+    // Clear any existing reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+
+    try {
+      // Convert HTTP URL to WebSocket URL
+      const wsUrl = config.baseUrl.replace(/^http/, 'ws') + '/api/websocket';
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          switch (message.type) {
+            case 'auth_required':
+              // Send authentication
+              sendMessage({ type: 'auth', access_token: config.token });
+              break;
+              
+            case 'auth_ok':
+              setIsConnected(true);
+              setError(null);
+              // Subscribe to state changes
+              sendMessage({ type: 'subscribe_events', event_type: 'state_changed' });
+              // Fetch initial states
+              fetchInitialStates();
+              break;
+              
+            case 'auth_invalid':
+              setError('Authentication failed');
+              setIsConnected(false);
+              break;
+              
+            case 'event':
+              if (message.event?.event_type === 'state_changed') {
+                const newState = message.event.data.new_state;
+                if (newState) {
+                  setEntities(prev => ({
+                    ...prev,
+                    [newState.entity_id]: newState
+                  }));
+                }
+              }
+              break;
+              
+            case 'result':
+              // Handle command results if needed
+              break;
+          }
+        } catch (err) {
+          console.error('Error parsing WebSocket message:', err);
+        }
+      };
+
+      ws.onclose = (event) => {
+        console.log('WebSocket disconnected:', event.code, event.reason);
+        setIsConnected(false);
+        
+        // Attempt to reconnect after 5 seconds if not manually closed
+        if (event.code !== 1000 && config) {
+          reconnectTimeoutRef.current = setTimeout(() => {
+            console.log('Attempting to reconnect...');
+            connectWebSocket();
+          }, 5000);
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setError('WebSocket connection error');
+        setIsConnected(false);
+      };
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to connect WebSocket');
+      setIsConnected(false);
+    }
+  }, [config, sendMessage, fetchInitialStates]);
 
   const callService = useCallback(async (domain: string, service: string, entity_id: string, data?: any) => {
     if (!config?.baseUrl || !config?.token) {
@@ -89,12 +192,11 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
         throw new Error(`Service call failed: ${response.status}`);
       }
 
-      // Refresh entities after service call
-      await fetchEntities();
+      // No need to refresh entities manually - WebSocket will provide real-time updates
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Service call failed');
     }
-  }, [config?.baseUrl, config?.token, getHeaders, fetchEntities]);
+  }, [config?.baseUrl, config?.token, getHeaders]);
 
   const generateAlerts = useCallback((entities: Record<string, HAEntity>): Alert[] => {
     const newAlerts: Alert[] = [];
@@ -141,14 +243,18 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
 
   useEffect(() => {
     if (isConfigured) {
-      fetchEntities();
+      connectWebSocket();
       
-      // Set up polling for real-time updates (every 5 seconds for better performance)
-      const interval = setInterval(fetchEntities, 5000);
-
-      return () => clearInterval(interval);
+      return () => {
+        if (wsRef.current) {
+          wsRef.current.close();
+        }
+        if (reconnectTimeoutRef.current) {
+          clearTimeout(reconnectTimeoutRef.current);
+        }
+      };
     }
-  }, [fetchEntities, isConfigured]);
+  }, [connectWebSocket, isConfigured]);
 
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
@@ -162,7 +268,7 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
     isLoading,
     error,
     callService,
-    refreshEntities: fetchEntities,
+    refreshEntities: fetchInitialStates,
     isConfigured,
   };
 };
