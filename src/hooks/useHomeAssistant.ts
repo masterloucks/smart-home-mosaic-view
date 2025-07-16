@@ -293,16 +293,17 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
   }, []);
 
   useEffect(() => {
-    if (isConfigured) {
+    if (isConfigured && !wsRef.current) {
       console.log('Configuration detected, connecting to WebSocket...');
       connectWebSocket();
-      
-      return () => {
-        console.log('Cleaning up WebSocket connection on unmount');
-        cleanupConnection();
-      };
     }
-  }, [connectWebSocket, isConfigured, cleanupConnection]);
+    
+    // Only cleanup on actual unmount, not on re-renders
+    return () => {
+      console.log('Component unmounting, cleaning up WebSocket connection');
+      cleanupConnection();
+    };
+  }, [isConfigured]); // Removed function dependencies to prevent re-connections
 
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
