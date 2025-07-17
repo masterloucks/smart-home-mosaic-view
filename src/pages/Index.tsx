@@ -26,10 +26,16 @@ const Index = () => {
   const { config, setConfig, isConfigured } = useSecureConfig();
   const { getEffectiveFilter } = useEntityConfig();
   
-  // Create config with entity filter
+  // Create config with entity filter for main entities display
   const configWithFilter = config ? {
     ...config,
     entityFilter: getEffectiveFilter()
+  } : null;
+  
+  // Create config without filter to get ALL entities for autocomplete
+  const configWithoutFilter = config ? {
+    ...config,
+    entityFilter: undefined // No filter to get all entities
   } : null;
   
   const { 
@@ -41,6 +47,9 @@ const Index = () => {
     callService, 
     refreshEntities 
   } = useHomeAssistant(configWithFilter);
+  
+  // Get all entities for autocomplete (separate hook call)
+  const { entities: allEntities } = useHomeAssistant(configWithoutFilter);
   
   const { toast } = useToast();
 
@@ -261,7 +270,7 @@ const Index = () => {
           />
           
           {/* Entity Filter Configuration */}
-          <EntityFilterConfig />
+          <EntityFilterConfig availableEntities={Object.keys(allEntities)} />
         </div>
       </div>
 

@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
 import { useEntityConfig } from '@/hooks/useEntityConfig';
-import { useHomeAssistant } from '@/hooks/useHomeAssistant';
-import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +9,11 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, Filter, Check } from 'lucide-react';
 
-export const EntityFilterConfig = () => {
+interface EntityFilterConfigProps {
+  availableEntities?: string[]; // Optional list of all available entity IDs
+}
+
+export const EntityFilterConfig = ({ availableEntities = [] }: EntityFilterConfigProps) => {
   const { 
     entityFilter, 
     isFilterEnabled, 
@@ -19,9 +21,6 @@ export const EntityFilterConfig = () => {
     setIsFilterEnabled,
     removeEntity 
   } = useEntityConfig();
-  
-  const { config } = useSecureConfig();
-  const { entities } = useHomeAssistant(config);
   
   const [newEntity, setNewEntity] = useState('');
   const [bulkEntities, setBulkEntities] = useState('');
@@ -31,8 +30,8 @@ export const EntityFilterConfig = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionListRef = useRef<HTMLDivElement>(null);
 
-  // Get filtered suggestions
-  const availableEntities = Object.keys(entities).filter(entityId => 
+  // Get filtered suggestions from available entities
+  const filteredSuggestions = availableEntities.filter(entityId => 
     !entityFilter.includes(entityId) && 
     entityId.toLowerCase().includes(newEntity.toLowerCase())
   ).slice(0, 10); // Limit to 10 suggestions
@@ -55,7 +54,7 @@ export const EntityFilterConfig = () => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showSuggestions || availableEntities.length === 0) {
+    if (!showSuggestions || filteredSuggestions.length === 0) {
       if (e.key === 'Enter') {
         handleAddEntity();
       }
@@ -66,7 +65,7 @@ export const EntityFilterConfig = () => {
       case 'ArrowDown':
         e.preventDefault();
         setHighlightedIndex(prev => 
-          prev < availableEntities.length - 1 ? prev + 1 : prev
+          prev < filteredSuggestions.length - 1 ? prev + 1 : prev
         );
         break;
       case 'ArrowUp':
@@ -76,7 +75,7 @@ export const EntityFilterConfig = () => {
       case 'Enter':
         e.preventDefault();
         if (highlightedIndex >= 0) {
-          handleAddEntity(availableEntities[highlightedIndex]);
+          handleAddEntity(filteredSuggestions[highlightedIndex]);
         } else {
           handleAddEntity();
         }
@@ -170,14 +169,12 @@ export const EntityFilterConfig = () => {
                   />
                   
                   {/* Suggestions Dropdown */}
-                  {showSuggestions && availableEntities.length > 0 && (
+                  {showSuggestions && filteredSuggestions.length > 0 && (
                     <div 
                       ref={suggestionListRef}
                       className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
                     >
-                      {availableEntities.map((entityId, index) => {
-                        const entity = entities[entityId];
-                        const friendlyName = entity?.attributes?.friendly_name || entityId;
+                      {filteredSuggestions.map((entityId, index) => {
                         
                         return (
                           <div
@@ -190,10 +187,10 @@ export const EntityFilterConfig = () => {
                             onClick={() => handleAddEntity(entityId)}
                           >
                             <div className="flex items-center justify-between">
-                              <div>
-                                <div className="text-sm font-medium">{friendlyName}</div>
-                                <div className="text-xs text-muted-foreground">{entityId}</div>
-                              </div>
+                            <div>
+                              <div className="text-sm font-medium">{entityId}</div>
+                              <div className="text-xs text-muted-foreground">Entity ID</div>
+                            </div>
                               {index === highlightedIndex && (
                                 <Check className="h-4 w-4 text-primary" />
                               )}
