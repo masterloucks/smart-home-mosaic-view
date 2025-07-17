@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 import { useHomeAssistant } from '@/hooks/useHomeAssistant';
 import { useSecureConfig } from '@/hooks/useSecureConfig';
+import { useEntityConfig } from '@/hooks/useEntityConfig';
 import { DeviceGroup } from '@/components/DeviceGroup';
 import { CameraFeed } from '@/components/CameraFeed';
 import { AlertsPanel } from '@/components/AlertsPanel';
 import { SecurityConfig } from '@/components/SecurityConfig';
+import { EntityFilterConfig } from '@/components/EntityFilterConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +24,14 @@ import { Link } from 'react-router-dom';
 
 const Index = () => {
   const { config, setConfig, isConfigured } = useSecureConfig();
+  const { getEffectiveFilter } = useEntityConfig();
+  
+  // Create config with entity filter
+  const configWithFilter = config ? {
+    ...config,
+    entityFilter: getEffectiveFilter()
+  } : null;
+  
   const { 
     entities, 
     alerts, 
@@ -30,7 +40,7 @@ const Index = () => {
     error, 
     callService, 
     refreshEntities 
-  } = useHomeAssistant(config);
+  } = useHomeAssistant(configWithFilter);
   
   const { toast } = useToast();
 
@@ -241,7 +251,7 @@ const Index = () => {
         </div>
 
         {/* Alerts Panel - Right Column */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 space-y-6">
           <AlertsPanel 
             alerts={alerts}
             onDismissAlert={(alertId) => {
@@ -249,6 +259,9 @@ const Index = () => {
               console.log('Dismiss alert:', alertId);
             }}
           />
+          
+          {/* Entity Filter Configuration */}
+          <EntityFilterConfig />
         </div>
       </div>
 

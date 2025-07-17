@@ -5,6 +5,7 @@ import { HAEntity, HAState, Alert } from '@/types/homeassistant';
 interface HomeAssistantConfig {
   baseUrl: string;
   token: string;
+  entityFilter?: string[]; // Optional list of entity IDs to include
 }
 
 interface HomeAssistantHook {
@@ -160,10 +161,13 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
               if (message.event?.event_type === 'state_changed') {
                 const newState = message.event.data.new_state;
                 if (newState) {
-                  setEntities(prev => ({
-                    ...prev,
-                    [newState.entity_id]: newState
-                  }));
+                  // Only update if entity is in filter list (or no filter configured)
+                  if (!config?.entityFilter || config.entityFilter.length === 0 || config.entityFilter.includes(newState.entity_id)) {
+                    setEntities(prev => ({
+                      ...prev,
+                      [newState.entity_id]: newState
+                    }));
+                  }
                 }
               }
               break;
@@ -172,7 +176,17 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
               // Handle get_states response
               if (message.success && Array.isArray(message.result)) {
                 console.log(`Received ${message.result.length} entities`);
-                const entitiesMap = message.result.reduce((acc: Record<string, HAEntity>, entity: HAEntity) => {
+                let filteredEntities = message.result;
+                
+                // Apply entity filter if configured
+                if (config?.entityFilter && config.entityFilter.length > 0) {
+                  filteredEntities = message.result.filter((entity: HAEntity) => 
+                    config.entityFilter!.includes(entity.entity_id)
+                  );
+                  console.log(`Filtered to ${filteredEntities.length} entities based on configuration`);
+                }
+                
+                const entitiesMap = filteredEntities.reduce((acc: Record<string, HAEntity>, entity: HAEntity) => {
                   acc[entity.entity_id] = entity;
                   return acc;
                 }, {});
