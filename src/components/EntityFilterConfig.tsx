@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useEntityConfig } from '@/hooks/useEntityConfig';
+import { useHomeAssistant } from '@/hooks/useHomeAssistant';
+import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { X, Plus, Filter } from 'lucide-react';
+import { X, Plus, Filter, Check } from 'lucide-react';
 
 export const EntityFilterConfig = () => {
   const { 
@@ -18,15 +20,86 @@ export const EntityFilterConfig = () => {
     removeEntity 
   } = useEntityConfig();
   
+  const { config } = useSecureConfig();
+  const { entities } = useHomeAssistant(config);
+  
   const [newEntity, setNewEntity] = useState('');
   const [bulkEntities, setBulkEntities] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  
+  const inputRef = useRef<HTMLInputElement>(null);
+  const suggestionListRef = useRef<HTMLDivElement>(null);
 
-  const handleAddEntity = () => {
-    if (newEntity.trim() && !entityFilter.includes(newEntity.trim())) {
-      setEntityFilter([...entityFilter, newEntity.trim()]);
+  // Get filtered suggestions
+  const availableEntities = Object.keys(entities).filter(entityId => 
+    !entityFilter.includes(entityId) && 
+    entityId.toLowerCase().includes(newEntity.toLowerCase())
+  ).slice(0, 10); // Limit to 10 suggestions
+
+  const handleAddEntity = (entityId?: string) => {
+    const entityToAdd = entityId || newEntity.trim();
+    if (entityToAdd && !entityFilter.includes(entityToAdd)) {
+      setEntityFilter([...entityFilter, entityToAdd]);
       setNewEntity('');
+      setShowSuggestions(false);
+      setHighlightedIndex(-1);
     }
   };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewEntity(value);
+    setShowSuggestions(value.length > 0);
+    setHighlightedIndex(-1);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showSuggestions || availableEntities.length === 0) {
+      if (e.key === 'Enter') {
+        handleAddEntity();
+      }
+      return;
+    }
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setHighlightedIndex(prev => 
+          prev < availableEntities.length - 1 ? prev + 1 : prev
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setHighlightedIndex(prev => prev > 0 ? prev - 1 : -1);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (highlightedIndex >= 0) {
+          handleAddEntity(availableEntities[highlightedIndex]);
+        } else {
+          handleAddEntity();
+        }
+        break;
+      case 'Escape':
+        setShowSuggestions(false);
+        setHighlightedIndex(-1);
+        break;
+    }
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node) &&
+          suggestionListRef.current && !suggestionListRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleBulkAdd = () => {
     const entities = bulkEntities
@@ -81,17 +154,57 @@ export const EntityFilterConfig = () => {
             </div>
 
             {/* Add Single Entity */}
-            <div className="space-y-2">
+            <div className="space-y-2 relative">
               <Label htmlFor="new-entity">Add Entity</Label>
               <div className="flex gap-2">
-                <Input
-                  id="new-entity"
-                  value={newEntity}
-                  onChange={(e) => setNewEntity(e.target.value)}
-                  placeholder="e.g., sensor.living_room_temperature"
-                  onKeyPress={(e) => e.key === 'Enter' && handleAddEntity()}
-                />
-                <Button onClick={handleAddEntity} size="sm">
+                <div className="relative flex-1">
+                  <Input
+                    ref={inputRef}
+                    id="new-entity"
+                    value={newEntity}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => newEntity.length > 0 && setShowSuggestions(true)}
+                    placeholder="e.g., sensor.living_room_temperature"
+                    autoComplete="off"
+                  />
+                  
+                  {/* Suggestions Dropdown */}
+                  {showSuggestions && availableEntities.length > 0 && (
+                    <div 
+                      ref={suggestionListRef}
+                      className="absolute top-full left-0 right-0 z-50 mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-y-auto"
+                    >
+                      {availableEntities.map((entityId, index) => {
+                        const entity = entities[entityId];
+                        const friendlyName = entity?.attributes?.friendly_name || entityId;
+                        
+                        return (
+                          <div
+                            key={entityId}
+                            className={`px-3 py-2 cursor-pointer border-b border-border/50 last:border-b-0 ${
+                              index === highlightedIndex 
+                                ? 'bg-muted' 
+                                : 'hover:bg-muted/50'
+                            }`}
+                            onClick={() => handleAddEntity(entityId)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <div className="text-sm font-medium">{friendlyName}</div>
+                                <div className="text-xs text-muted-foreground">{entityId}</div>
+                              </div>
+                              {index === highlightedIndex && (
+                                <Check className="h-4 w-4 text-primary" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+                <Button onClick={() => handleAddEntity()} size="sm">
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
