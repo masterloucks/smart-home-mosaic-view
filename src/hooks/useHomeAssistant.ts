@@ -319,6 +319,14 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
     };
   }, [isConfigured]); // Removed function dependencies to prevent re-connections
 
+  // Refetch entities when the entity filter changes
+  useEffect(() => {
+    if (isConnected && config) {
+      console.log('Entity filter changed, refetching entities...');
+      fetchInitialStates();
+    }
+  }, [config?.entityFilter, isConnected, fetchInitialStates]);
+
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
     setAlerts(newAlerts);
