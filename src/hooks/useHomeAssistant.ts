@@ -1,6 +1,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { HAEntity, HAState, Alert } from '@/types/homeassistant';
+import { HAEntity, HAState } from '@/types/homeassistant';
 
 interface HomeAssistantConfig {
   baseUrl: string;
@@ -10,7 +10,6 @@ interface HomeAssistantConfig {
 
 interface HomeAssistantHook {
   entities: Record<string, HAEntity>;
-  alerts: Alert[];
   isConnected: boolean;
   isLoading: boolean;
   error: string | null;
@@ -21,7 +20,6 @@ interface HomeAssistantHook {
 
 export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssistantHook => {
   const [entities, setEntities] = useState<Record<string, HAEntity>>({});
-  const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -269,48 +267,11 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
     }
   }, [sendMessage]);
 
-  const generateAlerts = useCallback((entities: Record<string, HAEntity>): Alert[] => {
-    const newAlerts: Alert[] = [];
-
-    // Check for open doors
-    Object.values(entities).forEach(entity => {
-      if (entity.entity_id.includes('door_contact_sensor') && entity.state === 'on') {
-        newAlerts.push({
-          id: `${entity.entity_id}-open`,
-          message: `${entity.attributes.friendly_name || entity.entity_id} is open`,
-          priority: 'warning',
-          timestamp: entity.last_changed,
-          entity_id: entity.entity_id,
-        });
-      }
-    });
-
-    // Check for temperature alerts
-    Object.values(entities).forEach(entity => {
-      if (entity.entity_id.includes('temperature') && entity.attributes.unit_of_measurement === '°F') {
-        const temp = parseFloat(entity.state);
-        if (temp > 85) {
-          newAlerts.push({
-            id: `${entity.entity_id}-hot`,
-            message: `${entity.attributes.friendly_name || entity.entity_id} temperature is high: ${temp}°F`,
-            priority: 'critical',
-            timestamp: entity.last_changed,
-            entity_id: entity.entity_id,
-          });
-        } else if (temp < 32) {
-          newAlerts.push({
-            id: `${entity.entity_id}-cold`,
-            message: `${entity.attributes.friendly_name || entity.entity_id} temperature is low: ${temp}°F`,
-            priority: 'warning',
-            timestamp: entity.last_changed,
-            entity_id: entity.entity_id,
-          });
-        }
-      }
-    });
-
-    return newAlerts;
-  }, []);
+  const refreshEntities = useCallback(async () => {
+    if (isConnected) {
+      await fetchInitialStates();
+    }
+  }, [isConnected, fetchInitialStates]);
 
   useEffect(() => {
     if (isConfigured && !wsRef.current) {
@@ -333,19 +294,13 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
     }
   }, [JSON.stringify(config?.entityFilter), isConnected]);
 
-  useEffect(() => {
-    const newAlerts = generateAlerts(entities);
-    setAlerts(newAlerts);
-  }, [entities, generateAlerts]);
-
   return {
     entities,
-    alerts,
     isConnected,
     isLoading,
     error,
     callService,
-    refreshEntities: fetchInitialStates,
+    refreshEntities,
     isConfigured,
   };
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLayoutConfig } from '@/hooks/useLayoutConfig';
 import { useGroupConfig } from '@/hooks/useGroupConfig';
-import { useSystemWidgets } from '@/hooks/useSystemWidgets';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ import {
 export const LayoutCustomization = () => {
   const { columns, setColumns } = useLayoutConfig();
   const { groups, updateGroup } = useGroupConfig();
-  const { widgets, updateWidget } = useSystemWidgets();
+  
   const { toast } = useToast();
 
   const handleColumnChange = (newColumns: string) => {
@@ -41,15 +41,6 @@ export const LayoutCustomization = () => {
     });
   };
 
-  const handleWidgetColumnChange = (widgetId: string, newColumn: string) => {
-    const columnNumber = parseInt(newColumn);
-    updateWidget(widgetId, { column: columnNumber });
-    const widget = widgets.find(w => w.id === widgetId);
-    toast({
-      title: "Widget Moved",
-      description: `Moved "${widget?.name}" to column ${columnNumber}`,
-    });
-  };
 
   const getColumnOptions = () => {
     const options = [];
@@ -62,8 +53,7 @@ export const LayoutCustomization = () => {
 
   const getItemsInColumn = (column: number) => {
     const groupsInColumn = groups.filter(g => g.column === column && g.entityIds.length > 0);
-    const widgetsInColumn = widgets.filter(w => w.column === column && w.enabled);
-    return [...groupsInColumn, ...widgetsInColumn].length;
+    return groupsInColumn.length;
   };
 
   return (
@@ -173,61 +163,6 @@ export const LayoutCustomization = () => {
         </CardContent>
       </Card>
 
-      {/* System Widget Column Assignment */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            System Widget Placement
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Assign system widgets (cameras, alerts) to columns
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {widgets.map((widget) => (
-              <div
-                key={widget.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{widget.name}</span>
-                  </div>
-                  <Badge 
-                    variant={widget.enabled ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {widget.enabled ? 'Enabled' : 'Disabled'}
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Column:</span>
-                  <Select 
-                    value={widget.column?.toString() || "1"} 
-                    onValueChange={(value) => handleWidgetColumnChange(widget.id, value)}
-                    disabled={!widget.enabled}
-                  >
-                    <SelectTrigger className="w-28">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getColumnOptions().map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };

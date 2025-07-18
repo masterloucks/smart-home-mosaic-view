@@ -15,15 +15,6 @@ export interface HAState {
   entities: Record<string, HAEntity>;
 }
 
-export interface CameraEntity extends HAEntity {
-  attributes: {
-    friendly_name: string;
-    entity_picture?: string;
-    access_token?: string;
-    brand?: string;
-    model?: string;
-  };
-}
 
 export interface SensorEntity extends HAEntity {
   attributes: {
@@ -58,13 +49,6 @@ export interface DeviceTrackerEntity extends HAEntity {
   };
 }
 
-export interface Alert {
-  id: string;
-  message: string;
-  priority: 'info' | 'warning' | 'critical';
-  timestamp: string;
-  entity_id?: string;
-}
 
 export type DeviceGroup = {
   id: string;

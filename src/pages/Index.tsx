@@ -4,10 +4,7 @@ import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { useEntityConfig } from '@/hooks/useEntityConfig';
 import { useLayoutConfig } from '@/hooks/useLayoutConfig';
 import { useGroupConfig } from '@/hooks/useGroupConfig';
-import { useSystemWidgets } from '@/hooks/useSystemWidgets';
 import { DeviceGroup } from '@/components/DeviceGroup';
-import { CameraFeed } from '@/components/CameraFeed';
-import { AlertsPanel } from '@/components/AlertsPanel';
 import { SecurityConfig } from '@/components/SecurityConfig';
 import { EntityFilterConfig } from '@/components/EntityFilterConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +20,7 @@ import {
   Bug,
   Settings
 } from 'lucide-react';
-import { DeviceGroup as DeviceGroupType, CameraEntity } from '@/types/homeassistant';
+import { DeviceGroup as DeviceGroupType } from '@/types/homeassistant';
 import { Link } from 'react-router-dom';
 
 const Index = () => {
@@ -31,7 +28,7 @@ const Index = () => {
   const { getEffectiveFilter } = useEntityConfig();
   const { columns } = useLayoutConfig();
   const { groups, getGroupsForColumn } = useGroupConfig();
-  const { getWidgetsForColumn } = useSystemWidgets();
+  
   
   // Create config with entity filter for main entities display
   const configWithFilter = config ? {
@@ -47,8 +44,7 @@ const Index = () => {
   
   const { 
     entities, 
-    alerts, 
-    isConnected, 
+    isConnected,
     isLoading, 
     error, 
     callService, 
@@ -200,12 +196,6 @@ const Index = () => {
     return legacyGroups;
   };
 
-  // Get camera entities
-  const getCameras = (): CameraEntity[] => {
-    return Object.values(entities)
-      .filter(e => e.entity_id.startsWith('camera'))
-      .map(e => e as CameraEntity);
-  };
 
   const handleEntityToggle = async (entityId: string) => {
     const entity = entities[entityId];
@@ -267,7 +257,6 @@ const Index = () => {
   };
 
   const deviceGroups = groupEntities();
-  const cameras = getCameras();
 
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
@@ -350,7 +339,6 @@ const Index = () => {
         {Array.from({ length: columns || 3 }, (_, columnIndex) => {
           const columnNumber = columnIndex + 1;
           const columnGroups = deviceGroups.filter(group => (group as any).column === columnNumber);
-          const columnWidgets = getWidgetsForColumn(columnNumber);
           
           return (
             <div key={columnNumber} className="space-y-6">
@@ -363,47 +351,8 @@ const Index = () => {
                 />
               ))}
               
-              {/* Render camera widget for this column */}
-              {columnWidgets.some(w => w.type === 'cameras') && (
-                <Card className="glass-effect">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Live Cameras
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {cameras.map((camera) => (
-                      <CameraFeed
-                        key={camera.entity_id}
-                        camera={camera}
-                        baseUrl={config?.baseUrl}
-                        token={config?.token}
-                      />
-                    ))}
-                    
-                    {cameras.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <p>No cameras configured</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-              
-              {/* Render alerts widget for this column */}
-              {columnWidgets.some(w => w.type === 'alerts') && (
-                <AlertsPanel 
-                  alerts={alerts}
-                  onDismissAlert={(alertId) => {
-                    // Handle alert dismissal if needed
-                    console.log('Dismiss alert:', alertId);
-                  }}
-                />
-              )}
-              
               {/* Show placeholder for empty columns */}
-              {columnGroups.length === 0 && columnWidgets.length === 0 && (
+              {columnGroups.length === 0 && (
                 <Card className="glass-effect opacity-50">
                   <CardContent className="p-6 text-center">
                     <Home className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
@@ -421,8 +370,7 @@ const Index = () => {
       <div className="mt-8 text-center text-xs text-muted-foreground">
         <p>
           Last updated: {new Date().toLocaleString()} | 
-          Entities: {Object.keys(entities).length} | 
-          Active alerts: {alerts.length}
+          Entities: {Object.keys(entities).length}
         </p>
       </div>
     </div>

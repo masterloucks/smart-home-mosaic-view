@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GroupCustomization } from '@/components/GroupCustomization';
 import { LayoutCustomization } from '@/components/LayoutCustomization';
-import { SystemWidgetConfig } from '@/components/SystemWidgetConfig';
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Search, X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
