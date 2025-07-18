@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { GroupCustomization } from '@/components/GroupCustomization';
 import { ArrowLeft, Search, X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -285,206 +286,218 @@ const EntityFilterConfig = () => {
           </CardContent>
         </Card>
       ) : (
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Search and Add Panel - 75% width */}
-        <div className="lg:col-span-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Search & Add Entities
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Entity Type Filters - Always visible */}
-              {availableEntityTypes.length > 0 && (
-                <div className="space-y-2">
-                  <div className="text-sm font-medium">Filter by type:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {availableEntityTypes.map(entityType => (
-                      <label
-                        key={entityType}
-                        className="flex items-center gap-2 text-sm cursor-pointer"
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Search and Add Panel - 75% width */}
+            <div className="lg:col-span-3">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Search className="h-5 w-5" />
+                    Search & Add Entities
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Entity Type Filters - Always visible */}
+                  {availableEntityTypes.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Filter by type:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {availableEntityTypes.map(entityType => (
+                          <label
+                            key={entityType}
+                            className="flex items-center gap-2 text-sm cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={selectedEntityTypes.includes(entityType)}
+                              onCheckedChange={(checked) => handleEntityTypeToggle(entityType, checked as boolean)}
+                            />
+                            <span className="text-xs">{entityType}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search entities by name, ID, or type..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+
+                  {/* Bulk Actions */}
+                  {filteredEntities.length > 0 && (
+                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          checked={selectedEntities.length === filteredEntities.length}
+                          onCheckedChange={handleSelectAll}
+                        />
+                        <span className="text-xs">
+                          {selectedEntities.length > 0 
+                            ? `${selectedEntities.length} selected` 
+                            : 'Select all'
+                          }
+                        </span>
+                      </div>
+                      
+                      {selectedEntities.length > 0 && (
+                        <Button 
+                          size="sm"
+                          onClick={handleAddSelected}
+                          className="flex items-center gap-1 text-xs"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add Selected ({selectedEntities.length})
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Search Results */}
+                  <div className="space-y-1 max-h-96 overflow-y-auto">
+                    {filteredEntities.map((entityId) => (
+                      <div 
+                        key={entityId}
+                        className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
                       >
                         <Checkbox
-                          checked={selectedEntityTypes.includes(entityType)}
-                          onCheckedChange={(checked) => handleEntityTypeToggle(entityType, checked as boolean)}
+                          checked={selectedEntities.includes(entityId)}
+                          onCheckedChange={(checked) => handleSelectEntity(entityId, checked as boolean)}
                         />
-                        <span className="text-xs">{entityType}</span>
-                      </label>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium truncate">
+                            {getFriendlyName(entityId)}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {entityId}
+                          </div>
+                        </div>
+                        
+                        <Badge variant="outline" className="text-xs px-1 py-0">
+                          {getEntityType(entityId)}
+                        </Badge>
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            addEntity(entityId);
+                            toast({
+                              title: "Entity Added",
+                              description: `Added ${getFriendlyName(entityId)} to the filter`,
+                            });
+                          }}
+                          className="flex items-center gap-1 h-7 px-2 text-xs"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add
+                        </Button>
+                      </div>
                     ))}
+                    
+                    {searchTerm && filteredEntities.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No entities found matching "{searchTerm}"</p>
+                      </div>
+                    )}
+                    
+                    {!searchTerm && filteredEntities.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                        <p>No entities available to add</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search entities by name, ID, or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Bulk Actions */}
-              {filteredEntities.length > 0 && (
-                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      checked={selectedEntities.length === filteredEntities.length}
-                      onCheckedChange={handleSelectAll}
-                    />
-                    <span className="text-xs">
-                      {selectedEntities.length > 0 
-                        ? `${selectedEntities.length} selected` 
-                        : 'Select all'
-                      }
-                    </span>
+            {/* Currently Added Entities Panel - 25% width */}
+            <div className="lg:col-span-1">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      Added Entities
+                    </CardTitle>
+                    {entityFilter.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearAll}
+                        className="flex items-center gap-1 text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Clear All
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-1 max-h-96 overflow-y-auto">
+                    {entityFilter.map((entityId) => (
+                      <div 
+                        key={entityId}
+                        className="flex items-center gap-2 p-1.5 border rounded hover:bg-muted/50"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium truncate">
+                            {getFriendlyName(entityId)}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            {entityId}
+                          </div>
+                        </div>
+                        
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveEntity(entityId)}
+                          className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </Button>
+                      </div>
+                    ))}
+                    
+                    {entityFilter.length === 0 && (
+                      <div className="text-center py-6 text-muted-foreground">
+                        <p className="text-xs">No entities added</p>
+                        <p className="text-xs mt-1 opacity-75">Search and add entities to filter your dashboard</p>
+                      </div>
+                    )}
                   </div>
                   
-                  {selectedEntities.length > 0 && (
-                    <Button 
-                      size="sm"
-                      onClick={handleAddSelected}
-                      className="flex items-center gap-1 text-xs"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add Selected ({selectedEntities.length})
-                    </Button>
+                  {entityFilter.length > 0 && (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="text-xs text-muted-foreground text-center">
+                        {entityFilter.length} entities will be shown on the dashboard
+                      </div>
+                    </div>
                   )}
-                </div>
-              )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
 
-              {/* Search Results */}
-              <div className="space-y-1 max-h-96 overflow-y-auto">
-                {filteredEntities.map((entityId) => (
-                  <div 
-                    key={entityId}
-                    className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
-                  >
-                    <Checkbox
-                      checked={selectedEntities.includes(entityId)}
-                      onCheckedChange={(checked) => handleSelectEntity(entityId, checked as boolean)}
-                    />
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">
-                        {getFriendlyName(entityId)}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {entityId}
-                      </div>
-                    </div>
-                    
-                    <Badge variant="outline" className="text-xs px-1 py-0">
-                      {getEntityType(entityId)}
-                    </Badge>
-                    
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        addEntity(entityId);
-                        toast({
-                          title: "Entity Added",
-                          description: `Added ${getFriendlyName(entityId)} to the filter`,
-                        });
-                      }}
-                      className="flex items-center gap-1 h-7 px-2 text-xs"
-                    >
-                      <Plus className="h-3 w-3" />
-                      Add
-                    </Button>
-                  </div>
-                ))}
-                
-                {searchTerm && filteredEntities.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No entities found matching "{searchTerm}"</p>
-                  </div>
-                )}
-                
-                {!searchTerm && filteredEntities.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>No entities available to add</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Currently Added Entities Panel - 25% width */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  Added Entities
-                </CardTitle>
-                {entityFilter.length > 0 && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleClearAll}
-                    className="flex items-center gap-1 text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    Clear All
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1 max-h-96 overflow-y-auto">
-                {entityFilter.map((entityId) => (
-                  <div 
-                    key={entityId}
-                    className="flex items-center gap-2 p-1.5 border rounded hover:bg-muted/50"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-medium truncate">
-                        {getFriendlyName(entityId)}
-                      </div>
-                      <div className="text-xs text-muted-foreground truncate">
-                        {entityId}
-                      </div>
-                    </div>
-                    
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleRemoveEntity(entityId)}
-                      className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </Button>
-                  </div>
-                ))}
-                
-                {entityFilter.length === 0 && (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <p className="text-xs">No entities added</p>
-                    <p className="text-xs mt-1 opacity-75">Search and add entities to filter your dashboard</p>
-                  </div>
-                )}
-              </div>
-              
-              {entityFilter.length > 0 && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="text-xs text-muted-foreground text-center">
-                    {entityFilter.length} entities will be shown on the dashboard
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          {/* Group Customization Section */}
+          <div className="mt-8">
+            <GroupCustomization
+              filteredEntities={entityFilter}
+              allEntities={allEntities}
+              getFriendlyName={getFriendlyName}
+              getEntityType={getEntityType}
+            />
+          </div>
+        </>
       )}
     </div>
   );
