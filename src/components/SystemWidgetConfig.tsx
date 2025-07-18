@@ -58,7 +58,7 @@ export const SystemWidgetConfig = () => {
   };
 
   const handleColumnChange = (widgetId: string, newColumn: string) => {
-    const columnNumber = parseInt(newColumn);
+    const columnNumber = newColumn === "none" ? 0 : parseInt(newColumn);
     updateWidget(widgetId, { column: columnNumber });
     const widget = widgets.find(w => w.id === widgetId);
     const columnText = columnNumber === 0 ? 'None (hidden)' : `Column ${columnNumber}`;
@@ -205,14 +205,14 @@ export const SystemWidgetConfig = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Column:</span>
                       <Select 
-                        value={widget.column.toString()} 
+                        value={widget.column === 0 ? "none" : widget.column.toString()} 
                         onValueChange={(value) => handleColumnChange(widget.id, value)}
                       >
                         <SelectTrigger className="w-20">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="bg-popover border shadow-lg z-50">
-                          <SelectItem value="0" className="cursor-pointer">
+                          <SelectItem value="none" className="cursor-pointer">
                             None
                           </SelectItem>
                           {Array.from({ length: layoutConfig?.columns || 3 }, (_, i) => (
