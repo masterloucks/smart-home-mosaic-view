@@ -211,10 +211,12 @@ export const SystemWidgetConfig = () => {
                         <SelectTrigger className="w-20">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md">
-                          <SelectItem value="0">None</SelectItem>
+                        <SelectContent className="bg-popover border shadow-lg z-50">
+                          <SelectItem value="0" className="cursor-pointer">
+                            None
+                          </SelectItem>
                           {Array.from({ length: layoutConfig?.columns || 3 }, (_, i) => (
-                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                            <SelectItem key={i + 1} value={(i + 1).toString()} className="cursor-pointer">
                               {i + 1}
                             </SelectItem>
                           ))}
