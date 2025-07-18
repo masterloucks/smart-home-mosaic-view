@@ -114,59 +114,12 @@ const Index = () => {
       configuredGroups: groups.map(g => ({ id: g.id, name: g.name, column: g.column, entityCount: g.entityIds.length }))
     });
 
-    // Auto-assign entities to groups based on domain if groups are empty
+    // Only show groups with explicitly assigned entities
     const groupsWithEntities = groups.map(group => {
-      let groupEntities = [];
-      
-      // If group already has entities assigned, use them
-      if (group.entityIds.length > 0) {
-        groupEntities = group.entityIds
-          .map(entityId => entities[entityId])
-          .filter(entity => entity !== undefined);
-      } else {
-        // Auto-assign based on group ID and entity domains
-        switch (group.id) {
-          case 'lights_switches':
-            groupEntities = entityValues.filter(e => 
-              e.entity_id.startsWith('light') || e.entity_id.startsWith('switch')
-            );
-            break;
-          case 'climate':
-            groupEntities = entityValues.filter(e => 
-              e.entity_id.startsWith('climate') ||
-              (e.entity_id.startsWith('sensor') && e.entity_id.includes('temperature'))
-            );
-            break;
-          case 'fans':
-            groupEntities = entityValues.filter(e => e.entity_id.startsWith('fan'));
-            break;
-          case 'covers':
-            groupEntities = entityValues.filter(e => e.entity_id.startsWith('cover'));
-            break;
-          case 'media_players':
-            groupEntities = entityValues.filter(e => e.entity_id.startsWith('media_player'));
-            break;
-          case 'locks':
-            groupEntities = entityValues.filter(e => e.entity_id.includes('lock'));
-            break;
-          case 'sensors':
-            groupEntities = entityValues.filter(e => 
-              e.entity_id.startsWith('binary_sensor') ||
-              (e.entity_id.startsWith('sensor') && !e.entity_id.includes('temperature'))
-            );
-            break;
-          case 'people':
-            groupEntities = entityValues.filter(e => 
-              e.entity_id.startsWith('person') || e.entity_id.startsWith('device_tracker')
-            );
-            break;
-          case 'weather':
-            groupEntities = entityValues.filter(e => e.entity_id.startsWith('weather'));
-            break;
-          default:
-            groupEntities = [];
-        }
-      }
+      // Only use entities that are explicitly assigned to this group
+      const groupEntities = group.entityIds
+        .map(entityId => entities[entityId])
+        .filter(entity => entity !== undefined);
 
       return {
         id: group.id,
