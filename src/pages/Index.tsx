@@ -101,6 +101,7 @@ const Index = () => {
 
   // Group entities by configured groups
   const groupEntitiesByConfig = () => {
+    // Use the filtered entities, not all entities
     const entityValues = Object.values(entities);
     
     // Debug: log entity filtering status
