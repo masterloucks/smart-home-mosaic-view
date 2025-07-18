@@ -321,11 +321,11 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
 
   // Refetch entities when the entity filter changes
   useEffect(() => {
-    if (isConnected && config) {
+    if (isConnected && config?.entityFilter) {
       console.log('Entity filter changed, refetching entities...');
       fetchInitialStates();
     }
-  }, [config?.entityFilter, isConnected, fetchInitialStates]);
+  }, [JSON.stringify(config?.entityFilter), isConnected]);
 
   useEffect(() => {
     const newAlerts = generateAlerts(entities);
