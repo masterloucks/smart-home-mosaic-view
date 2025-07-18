@@ -203,41 +203,6 @@ export const SystemWidgetConfig = () => {
                   
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">Column:</span>
-                      <Select 
-                        value={widget.column === 0 ? "none" : widget.column.toString()} 
-                        onValueChange={(value) => handleColumnChange(widget.id, value)}
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">
-                            None
-                          </SelectItem>
-                          <SelectItem value="1">
-                            1
-                          </SelectItem>
-                          <SelectItem value="2">
-                            2
-                          </SelectItem>
-                          {layoutConfig?.columns && layoutConfig.columns > 2 && (
-                            <>
-                              <SelectItem value="3">
-                                3
-                              </SelectItem>
-                              {layoutConfig.columns > 3 && (
-                                <SelectItem value="4">
-                                  4
-                                </SelectItem>
-                              )}
-                            </>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Order:</span>
                       <Select 
                         value={widget.order.toString()} 
@@ -246,7 +211,7 @@ export const SystemWidgetConfig = () => {
                         <SelectTrigger className="w-16">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-background border shadow-md">
+                        <SelectContent>
                           {Array.from({ length: widgets.length }, (_, i) => (
                             <SelectItem key={i + 1} value={(i + 1).toString()}>
                               {i + 1}
