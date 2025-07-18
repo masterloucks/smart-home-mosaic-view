@@ -33,6 +33,16 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
     const entityId = entity.entity_id.toLowerCase();
     const iconClass = "h-6 w-6 md:h-8 md:w-8";
     
+    // Debug logging for person entities
+    if (entityId.includes('person')) {
+      console.log('Person entity debug:', {
+        entityId,
+        originalEntityId: entity.entity_id,
+        startsWithPerson: entityId.startsWith('person'),
+        entityState: entity.state
+      });
+    }
+    
     if (entityId.startsWith('light') || entityId.startsWith('switch')) {
       return entity.state === 'on' ? <Lightbulb className={iconClass} /> : <LightbulbOff className={iconClass} />;
     }
@@ -61,6 +71,12 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
       return <Thermometer className={iconClass} />;
     }
     if (entityId.startsWith('device_tracker')) {
+      // Check if this is a person-like device tracker based on friendly name
+      const friendlyName = entity.attributes.friendly_name || '';
+      const personNames = ['admin', 'jason', 'mandy', 'zara', 'dashboard'];
+      if (personNames.some(name => friendlyName.toLowerCase().includes(name))) {
+        return entity.state === 'home' ? <User className={iconClass} /> : <User className={cn(iconClass, "opacity-50")} />;
+      }
       return entity.state === 'home' ? <Home className={iconClass} /> : <Smartphone className={iconClass} />;
     }
     if (entityId.startsWith('person')) {
