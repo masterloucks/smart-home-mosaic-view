@@ -99,7 +99,6 @@ const EntityFilterConfig = () => {
   const filteredEntities = useMemo(() => {
     const availableEntityIds = Object.keys(allEntities || {});
     
-    if (!searchTerm) return [];
     if (!allEntities || Object.keys(allEntities).length === 0) {
       return [];
     }
@@ -109,8 +108,8 @@ const EntityFilterConfig = () => {
         const friendlyName = getFriendlyName(entityId);
         const entityType = getEntityType(entityId);
         
-        // Filter by search term
-        const matchesSearch = (
+        // Filter by search term (if there is one)
+        const matchesSearch = !searchTerm || (
           entityId.toLowerCase().includes(searchTerm.toLowerCase()) ||
           friendlyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           entityType.toLowerCase().includes(searchTerm.toLowerCase())
@@ -356,10 +355,10 @@ const EntityFilterConfig = () => {
                   </div>
                 )}
                 
-                {!searchTerm && (
+                {!searchTerm && filteredEntities.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>Start typing to search for entities</p>
+                    <p>No entities available to add</p>
                   </div>
                 )}
               </div>
