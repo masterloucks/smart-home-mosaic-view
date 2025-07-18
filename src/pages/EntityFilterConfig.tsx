@@ -184,11 +184,6 @@ const EntityFilterConfig = () => {
     setSelectedEntities([]);
   }, [searchTerm]);
 
-  // Clear entity type filters when search changes
-  useEffect(() => {
-    setSelectedEntityTypes([]);
-  }, [searchTerm]);
-
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
       {/* Header */}
