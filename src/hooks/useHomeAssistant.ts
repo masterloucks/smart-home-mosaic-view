@@ -179,11 +179,17 @@ export const useHomeAssistant = (config: HomeAssistantConfig | null): HomeAssist
                 let filteredEntities = message.result;
                 
                 // Apply entity filter if configured
-                if (config?.entityFilter && config.entityFilter.length > 0) {
-                  filteredEntities = message.result.filter((entity: HAEntity) => 
-                    config.entityFilter!.includes(entity.entity_id)
-                  );
-                  console.log(`Filtered to ${filteredEntities.length} entities based on configuration`);
+                if (config?.entityFilter !== undefined) {
+                  if (config.entityFilter.length > 0) {
+                    filteredEntities = message.result.filter((entity: HAEntity) => 
+                      config.entityFilter!.includes(entity.entity_id)
+                    );
+                    console.log(`Filtered to ${filteredEntities.length} entities based on configuration`);
+                  } else {
+                    // Empty filter means show no entities
+                    filteredEntities = [];
+                    console.log('Empty filter - showing no entities');
+                  }
                 }
                 
                 const entitiesMap = filteredEntities.reduce((acc: Record<string, HAEntity>, entity: HAEntity) => {

@@ -42,7 +42,7 @@ export const useEntityConfig = () => {
     if (saved) {
       try {
         const config = JSON.parse(saved);
-        setEntityFilter(config.entityFilter || DEFAULT_ENTITY_FILTER);
+        setEntityFilter(config.entityFilter || []);
         setIsFilterEnabled(config.isFilterEnabled ?? true);
       } catch (error) {
         console.error('Failed to load entity filter config:', error);
