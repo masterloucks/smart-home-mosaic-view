@@ -50,30 +50,82 @@ const EntityFilterConfig = () => {
   const getEntityType = (entityId: string) => {
     const domain = entityId.split('.')[0];
     switch (domain) {
-      case 'light':
-        return 'Light';
-      case 'switch':
-        return 'Switch';
+      case 'automation':
+        return 'Automation';
       case 'binary_sensor':
         return 'Binary Sensor';
-      case 'sensor':
-        return 'Sensor';
-      case 'climate':
-        return 'Climate';
-      case 'fan':
-        return 'Fan';
-      case 'cover':
-        return 'Cover';
-      case 'media_player':
-        return 'Media Player';
-      case 'lock':
-        return 'Lock';
+      case 'button':
+        return 'Button';
       case 'camera':
         return 'Camera';
+      case 'climate':
+        return 'Climate';
+      case 'conversation':
+        return 'Conversation';
+      case 'cover':
+        return 'Cover';
       case 'device_tracker':
         return 'Device Tracker';
+      case 'event':
+        return 'Event';
+      case 'fan':
+        return 'Fan';
+      case 'group':
+        return 'Group';
+      case 'humidifier':
+        return 'Humidifier';
+      case 'input_boolean':
+        return 'Input Boolean';
+      case 'input_datetime':
+        return 'Input Datetime';
+      case 'input_number':
+        return 'Input Number';
+      case 'input_select':
+        return 'Input Select';
+      case 'input_text':
+        return 'Input Text';
+      case 'lawn_mower':
+        return 'Lawn Mower';
+      case 'light':
+        return 'Light';
+      case 'lock':
+        return 'Lock';
+      case 'media_player':
+        return 'Media Player';
+      case 'number':
+        return 'Number';
       case 'person':
         return 'Person';
+      case 'remote':
+        return 'Remote';
+      case 'scene':
+        return 'Scene';
+      case 'script':
+        return 'Script';
+      case 'select':
+        return 'Select';
+      case 'sensor':
+        return 'Sensor';
+      case 'siren':
+        return 'Siren';
+      case 'stt':
+        return 'Stt';
+      case 'sun':
+        return 'Sun';
+      case 'switch':
+        return 'Switch';
+      case 'timer':
+        return 'Timer';
+      case 'todo':
+        return 'Todo';
+      case 'tts':
+        return 'Tts';
+      case 'update':
+        return 'Update';
+      case 'weather':
+        return 'Weather';
+      case 'zone':
+        return 'Zone';
       default:
         return domain.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
