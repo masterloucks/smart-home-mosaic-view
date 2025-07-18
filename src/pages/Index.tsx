@@ -194,6 +194,97 @@ const Index = () => {
       });
     }
 
+    // Weather entities
+    const weather = entityValues.filter(e => e.entity_id.startsWith('weather'));
+    if (weather.length > 0) {
+      groups.push({
+        id: 'weather',
+        name: 'Weather',
+        entities: weather,
+        type: 'weather' as any
+      });
+    }
+
+    // Automation entities
+    const automations = entityValues.filter(e => e.entity_id.startsWith('automation'));
+    if (automations.length > 0) {
+      groups.push({
+        id: 'automations',
+        name: 'Automations',
+        entities: automations,
+        type: 'automation' as any
+      });
+    }
+
+    // Script entities
+    const scripts = entityValues.filter(e => e.entity_id.startsWith('script'));
+    if (scripts.length > 0) {
+      groups.push({
+        id: 'scripts',
+        name: 'Scripts',
+        entities: scripts,
+        type: 'script' as any
+      });
+    }
+
+    // Scene entities
+    const scenes = entityValues.filter(e => e.entity_id.startsWith('scene'));
+    if (scenes.length > 0) {
+      groups.push({
+        id: 'scenes',
+        name: 'Scenes',
+        entities: scenes,
+        type: 'scene' as any
+      });
+    }
+
+    // Input entities (input_boolean, input_number, etc.)
+    const inputs = entityValues.filter(e => e.entity_id.startsWith('input_'));
+    if (inputs.length > 0) {
+      groups.push({
+        id: 'inputs',
+        name: 'Input Controls',
+        entities: inputs,
+        type: 'input' as any
+      });
+    }
+
+    // Timer entities
+    const timers = entityValues.filter(e => e.entity_id.startsWith('timer'));
+    if (timers.length > 0) {
+      groups.push({
+        id: 'timers',
+        name: 'Timers',
+        entities: timers,
+        type: 'timer' as any
+      });
+    }
+
+    // Button entities
+    const buttons = entityValues.filter(e => e.entity_id.startsWith('button'));
+    if (buttons.length > 0) {
+      groups.push({
+        id: 'buttons',
+        name: 'Buttons',
+        entities: buttons,
+        type: 'button' as any
+      });
+    }
+
+    // Other sensor types (non-temperature)
+    const otherSensors = entityValues.filter(e => 
+      e.entity_id.startsWith('sensor') && 
+      !e.entity_id.includes('temperature')
+    );
+    if (otherSensors.length > 0) {
+      groups.push({
+        id: 'other_sensors',
+        name: 'Other Sensors',
+        entities: otherSensors,
+        type: 'sensor'
+      });
+    }
+
     return groups;
   };
 
