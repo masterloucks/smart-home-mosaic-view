@@ -44,6 +44,7 @@ const EntityFilterConfig = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntities, setSelectedEntities] = useState<string[]>([]);
+  const [selectedEntityTypes, setSelectedEntityTypes] = useState<string[]>([]);
 
   // Get entity type from entity_id
   const getEntityType = (entityId: string) => {
@@ -84,22 +85,22 @@ const EntityFilterConfig = () => {
     return entity?.attributes?.friendly_name || entityId;
   };
 
+  // Get unique entity types from all entities
+  const availableEntityTypes = useMemo(() => {
+    if (!allEntities) return [];
+    const types = new Set<string>();
+    Object.keys(allEntities).forEach(entityId => {
+      types.add(getEntityType(entityId));
+    });
+    return Array.from(types).sort();
+  }, [allEntities]);
+
   // Filter and search entities
   const filteredEntities = useMemo(() => {
     const availableEntityIds = Object.keys(allEntities || {});
     
-    // Debug logging
-    console.log('EntityFilterConfig Search Debug:', {
-      searchTerm,
-      allEntitiesCount: availableEntityIds.length,
-      allEntitiesFirst10: availableEntityIds.slice(0, 10), // First 10 for debugging
-      entityFilterCount: entityFilter.length,
-      isEmptyAllEntities: Object.keys(allEntities || {}).length === 0
-    });
-    
     if (!searchTerm) return [];
     if (!allEntities || Object.keys(allEntities).length === 0) {
-      console.log('No entities available for search');
       return [];
     }
     
@@ -108,24 +109,24 @@ const EntityFilterConfig = () => {
         const friendlyName = getFriendlyName(entityId);
         const entityType = getEntityType(entityId);
         
-        const matches = (
+        // Filter by search term
+        const matchesSearch = (
           entityId.toLowerCase().includes(searchTerm.toLowerCase()) ||
           friendlyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           entityType.toLowerCase().includes(searchTerm.toLowerCase())
         );
         
-        if (matches) {
-          console.log('Found match:', { entityId, friendlyName, entityType, searchTerm });
-        }
+        // Filter by selected entity types
+        const matchesType = selectedEntityTypes.length === 0 || 
+          selectedEntityTypes.includes(entityType);
         
-        return matches;
+        return matchesSearch && matchesType;
       })
       .filter(entityId => !entityFilter.includes(entityId))
       .slice(0, 100); // Limit results for performance
       
-    console.log('Search results count:', results.length);
     return results;
-  }, [allEntities, searchTerm, entityFilter]);
+  }, [allEntities, searchTerm, entityFilter, selectedEntityTypes]);
 
   const handleSelectEntity = (entityId: string, checked: boolean) => {
     if (checked) {
@@ -140,6 +141,14 @@ const EntityFilterConfig = () => {
       setSelectedEntities(filteredEntities);
     } else {
       setSelectedEntities([]);
+    }
+  };
+
+  const handleEntityTypeToggle = (entityType: string, checked: boolean) => {
+    if (checked) {
+      setSelectedEntityTypes(prev => [...prev, entityType]);
+    } else {
+      setSelectedEntityTypes(prev => prev.filter(type => type !== entityType));
     }
   };
 
@@ -173,6 +182,11 @@ const EntityFilterConfig = () => {
   // Clear selection when search changes
   useEffect(() => {
     setSelectedEntities([]);
+  }, [searchTerm]);
+
+  // Clear entity type filters when search changes
+  useEffect(() => {
+    setSelectedEntityTypes([]);
   }, [searchTerm]);
 
   return (
@@ -247,15 +261,36 @@ const EntityFilterConfig = () => {
                 />
               </div>
 
+              {/* Entity Type Filters */}
+              {searchTerm && availableEntityTypes.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-sm font-medium">Filter by type:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableEntityTypes.map(entityType => (
+                      <label
+                        key={entityType}
+                        className="flex items-center gap-2 text-sm cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={selectedEntityTypes.includes(entityType)}
+                          onCheckedChange={(checked) => handleEntityTypeToggle(entityType, checked as boolean)}
+                        />
+                        <span className="text-xs">{entityType}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Bulk Actions */}
               {filteredEntities.length > 0 && (
-                <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
                     <Checkbox
                       checked={selectedEntities.length === filteredEntities.length}
                       onCheckedChange={handleSelectAll}
                     />
-                    <span className="text-sm">
+                    <span className="text-xs">
                       {selectedEntities.length > 0 
                         ? `${selectedEntities.length} selected` 
                         : 'Select all'
@@ -265,10 +300,11 @@ const EntityFilterConfig = () => {
                   
                   {selectedEntities.length > 0 && (
                     <Button 
+                      size="sm"
                       onClick={handleAddSelected}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-1 text-xs"
                     >
-                      <Plus className="h-4 w-4" />
+                      <Plus className="h-3 w-3" />
                       Add Selected ({selectedEntities.length})
                     </Button>
                   )}
@@ -276,11 +312,11 @@ const EntityFilterConfig = () => {
               )}
 
               {/* Search Results */}
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-1 max-h-96 overflow-y-auto">
                 {filteredEntities.map((entityId) => (
                   <div 
                     key={entityId}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50"
+                    className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
                   >
                     <Checkbox
                       checked={selectedEntities.includes(entityId)}
@@ -288,15 +324,15 @@ const EntityFilterConfig = () => {
                     />
                     
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
+                      <div className="text-sm font-medium truncate">
                         {getFriendlyName(entityId)}
                       </div>
-                      <div className="text-sm text-muted-foreground truncate">
+                      <div className="text-xs text-muted-foreground truncate">
                         {entityId}
                       </div>
                     </div>
                     
-                    <Badge variant="outline">
+                    <Badge variant="outline" className="text-xs px-1 py-0">
                       {getEntityType(entityId)}
                     </Badge>
                     
@@ -310,7 +346,7 @@ const EntityFilterConfig = () => {
                           description: `Added ${getFriendlyName(entityId)} to the filter`,
                         });
                       }}
-                      className="flex items-center gap-1"
+                      className="flex items-center gap-1 h-7 px-2 text-xs"
                     >
                       <Plus className="h-3 w-3" />
                       Add
@@ -358,14 +394,14 @@ const EntityFilterConfig = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
+              <div className="space-y-1 max-h-96 overflow-y-auto">
                 {entityFilter.map((entityId) => (
                   <div 
                     key={entityId}
-                    className="flex items-center gap-2 p-2 border rounded-lg"
+                    className="flex items-center gap-2 p-1.5 border rounded hover:bg-muted/50"
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm truncate">
+                      <div className="text-xs font-medium truncate">
                         {getFriendlyName(entityId)}
                       </div>
                       <div className="text-xs text-muted-foreground truncate">
@@ -377,17 +413,17 @@ const EntityFilterConfig = () => {
                       size="sm"
                       variant="ghost"
                       onClick={() => handleRemoveEntity(entityId)}
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-2.5 w-2.5" />
                     </Button>
                   </div>
                 ))}
                 
                 {entityFilter.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">No entities added</p>
-                    <p className="text-xs mt-1">Search and add entities to filter your dashboard</p>
+                  <div className="text-center py-6 text-muted-foreground">
+                    <p className="text-xs">No entities added</p>
+                    <p className="text-xs mt-1 opacity-75">Search and add entities to filter your dashboard</p>
                   </div>
                 )}
               </div>
