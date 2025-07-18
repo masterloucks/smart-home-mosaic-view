@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 interface GroupCustomizationProps {
-  filteredEntities: string[];
+  addedEntities: string[];
   allEntities: Record<string, any>;
   getFriendlyName: (entityId: string) => string;
   getEntityType: (entityId: string) => string;
@@ -50,7 +50,7 @@ const ICON_OPTIONS = [
 ];
 
 export const GroupCustomization = ({ 
-  filteredEntities, 
+  addedEntities, 
   allEntities, 
   getFriendlyName, 
   getEntityType 
@@ -73,7 +73,7 @@ export const GroupCustomization = ({
   const [newGroupName, setNewGroupName] = useState('');
   const [newGroupIcon, setNewGroupIcon] = useState('activity');
 
-  const ungroupedEntities = getUngroupedEntities(filteredEntities);
+  const ungroupedEntities = getUngroupedEntities(addedEntities);
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return;
@@ -118,7 +118,7 @@ export const GroupCustomization = ({
     removeEntity(entityId);
     toast({
       title: "Entity Removed",
-      description: `Removed ${getFriendlyName(entityId)} from filter`,
+      description: `Removed ${getFriendlyName(entityId)} from added entities`,
     });
   };
 
@@ -126,7 +126,7 @@ export const GroupCustomization = ({
     ungroupedEntities.forEach(entityId => removeEntity(entityId));
     toast({
       title: "All Entities Removed",
-      description: `Removed ${ungroupedEntities.length} ungrouped entities from filter`,
+      description: `Removed ${ungroupedEntities.length} ungrouped entities from added entities`,
     });
   };
 
@@ -152,7 +152,7 @@ export const GroupCustomization = ({
                   Ungrouped Entities ({ungroupedEntities.length})
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  These entities have been added to the filter but aren't assigned to any group. 
+                  These entities have been added but aren't assigned to any group. 
                   They won't appear on the dashboard until grouped.
                 </p>
               </div>
@@ -291,7 +291,7 @@ export const GroupCustomization = ({
                     {getIconComponent(group.icon)}
                     <span className="font-medium">{group.name}</span>
                     <Badge variant="outline" className="text-xs">
-                      {group.entityIds.length} entities
+                      {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
                     </Badge>
                   </div>
                   
@@ -316,9 +316,9 @@ export const GroupCustomization = ({
                   </div>
                 </div>
                 
-                {group.entityIds.length > 0 && (
+                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
                   <div className="space-y-1">
-                    {group.entityIds.map((entityId) => (
+                    {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
                       <div
                         key={entityId}
                         className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
@@ -339,7 +339,7 @@ export const GroupCustomization = ({
                   </div>
                 )}
                 
-                {group.entityIds.length === 0 && (
+                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
                   <div className="text-xs text-muted-foreground italic">
                     No entities assigned
                   </div>
