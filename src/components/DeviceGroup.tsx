@@ -9,7 +9,8 @@ import {
   DoorOpen,
   Camera,
   Activity,
-  Lightbulb
+  Lightbulb,
+  User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,8 @@ export const DeviceGroup = ({ group, onEntityToggle, className }: DeviceGroupPro
         return <DoorOpen className="h-5 w-5" />;
       case 'device_tracker':
         return <Smartphone className="h-5 w-5" />;
+      case 'person':
+        return <User className="h-5 w-5" />;
       case 'camera':
         return <Camera className="h-5 w-5" />;
       default:
@@ -65,6 +68,8 @@ export const DeviceGroup = ({ group, onEntityToggle, className }: DeviceGroupPro
         case 'binary_sensor':
           return entity.state === 'on';
         case 'device_tracker':
+          return entity.state === 'home';
+        case 'person':
           return entity.state === 'home';
         default:
           return entity.state !== 'unavailable';
