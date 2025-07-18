@@ -9,7 +9,9 @@ import {
   Thermometer, 
   Smartphone,
   Home,
-  AlertTriangle
+  AlertTriangle,
+  Lightbulb,
+  LightbulbOff
 } from 'lucide-react';
 import { HAEntity } from '@/types/homeassistant';
 import { cn } from '@/lib/utils';
@@ -25,6 +27,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
     const entityId = entity.entity_id.toLowerCase();
     const iconClass = "h-6 w-6 md:h-8 md:w-8";
     
+    if (entityId.startsWith('light')) {
+      return entity.state === 'on' ? <Lightbulb className={iconClass} /> : <LightbulbOff className={iconClass} />;
+    }
     if (entityId.includes('lock')) {
       return entity.state === 'locked' ? <Lock className={iconClass} /> : <LockOpen className={iconClass} />;
     }
@@ -44,6 +49,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
   const getStatusColor = () => {
     const entityId = entity.entity_id.toLowerCase();
     
+    if (entityId.startsWith('light')) {
+      return entity.state === 'on' ? 'text-warning' : 'text-muted-foreground';
+    }
     if (entityId.includes('lock')) {
       return entity.state === 'locked' ? 'text-success' : 'text-warning';
     }
@@ -66,6 +74,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
   const getDisplayValue = () => {
     const entityId = entity.entity_id.toLowerCase();
     
+    if (entityId.startsWith('light')) {
+      return entity.state === 'on' ? 'On' : 'Off';
+    }
     if (entityId.includes('temperature')) {
       const unit = entity.attributes.unit_of_measurement || '';
       return `${entity.state}${unit}`;
@@ -86,6 +97,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
   const getCardBackground = () => {
     const entityId = entity.entity_id.toLowerCase();
     
+    if (entityId.startsWith('light') && entity.state === 'on') {
+      return 'bg-warning/10 border-warning/30';
+    }
     if (entityId.includes('lock') && entity.state === 'unlocked') {
       return 'bg-warning/10 border-warning/30';
     }
@@ -101,7 +115,7 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
     return 'bg-card border-border hover:bg-muted/50';
   };
 
-  const isInteractive = entity.entity_id.includes('lock');
+  const isInteractive = entity.entity_id.includes('lock') || entity.entity_id.startsWith('light');
   const friendlyName = entity.attributes.friendly_name || entity.entity_id.replace(/_/g, ' ');
 
   return (
