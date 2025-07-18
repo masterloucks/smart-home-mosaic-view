@@ -365,21 +365,21 @@ export const GroupCustomization = ({
                                 {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
                               </Badge>
                               <Badge variant="secondary" className="text-xs">
-                                Col {group.column}
+                                Col {group.column || 1}
                               </Badge>
                             </div>
                             
                             <div className="flex items-center gap-1">
                               {/* Column Assignment */}
                               <Select 
-                                value={group.column.toString()} 
+                                value={(group.column || 1).toString()} 
                                 onValueChange={(value) => handleColumnChange(group.id, parseInt(value))}
                               >
                                 <SelectTrigger className="w-16 h-8">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {Array.from({ length: layoutConfig.columns }, (_, i) => i + 1).map((col) => (
+                                  {Array.from({ length: layoutConfig?.columns || 3 }, (_, i) => i + 1).map((col) => (
                                     <SelectItem key={col} value={col.toString()}>
                                       {col}
                                     </SelectItem>
