@@ -2,6 +2,9 @@ import { useEffect } from 'react';
 import { useHomeAssistant } from '@/hooks/useHomeAssistant';
 import { useSecureConfig } from '@/hooks/useSecureConfig';
 import { useEntityConfig } from '@/hooks/useEntityConfig';
+import { useLayoutConfig } from '@/hooks/useLayoutConfig';
+import { useGroupConfig } from '@/hooks/useGroupConfig';
+import { useSystemWidgets } from '@/hooks/useSystemWidgets';
 import { DeviceGroup } from '@/components/DeviceGroup';
 import { CameraFeed } from '@/components/CameraFeed';
 import { AlertsPanel } from '@/components/AlertsPanel';
@@ -26,6 +29,9 @@ import { Link } from 'react-router-dom';
 const Index = () => {
   const { config, setConfig, isConfigured } = useSecureConfig();
   const { getEffectiveFilter } = useEntityConfig();
+  const { columns } = useLayoutConfig();
+  const { groups, getGroupsForColumn } = useGroupConfig();
+  const { getWidgetsForColumn } = useSystemWidgets();
   
   // Create config with entity filter for main entities display
   const configWithFilter = config ? {
@@ -64,9 +70,75 @@ const Index = () => {
     }
   }, [error, toast]);
 
-  // Group entities by type
+  // Map domain to group ID for entity assignment
+  const getGroupIdFromEntity = (entityId: string): string => {
+    const domain = entityId.split('.')[0];
+    switch (domain) {
+      case 'light':
+      case 'switch':
+        return 'lights_switches';
+      case 'climate':
+        return 'climate';
+      case 'fan':
+        return 'fans';
+      case 'cover':
+        return 'covers';
+      case 'media_player':
+        return 'media_players';
+      case 'lock':
+        return 'locks';
+      case 'binary_sensor':
+      case 'sensor':
+        return 'sensors';
+      case 'person':
+        return 'people';
+      case 'weather':
+        return 'weather';
+      default:
+        return 'sensors'; // fallback group
+    }
+  };
+
+  // Group entities by configured groups
+  const groupEntitiesByConfig = () => {
+    const entityValues = Object.values(entities);
+    
+    // Debug: log entity filtering status
+    console.log('Entity filter status:', { 
+      isConnected,
+      isFilterEnabled: configWithFilter?.entityFilter !== undefined,
+      filterCount: configWithFilter?.entityFilter?.length || 0,
+      totalEntities: entityValues.length,
+      actualEntityIds: Object.keys(entities),
+      filterEntities: configWithFilter?.entityFilter
+    });
+
+    return groups.map(group => {
+      // Get entities that belong to this group based on their entity IDs stored in the group
+      const groupEntities = group.entityIds
+        .map(entityId => entities[entityId])
+        .filter(entity => entity !== undefined);
+
+      return {
+        id: group.id,
+        name: group.name,
+        entities: groupEntities,
+        type: group.icon as any,
+        column: group.column
+      };
+    }).filter(group => group.entities.length > 0);
+  };
+
+  // Legacy groupEntities function for backward compatibility during transition
   const groupEntities = (): DeviceGroupType[] => {
-    const groups: DeviceGroupType[] = [];
+    // If groups have entities assigned, use the new system
+    const hasConfiguredGroups = groups.some(g => g.entityIds.length > 0);
+    if (hasConfiguredGroups) {
+      return groupEntitiesByConfig();
+    }
+
+    // Otherwise fall back to the old automatic grouping system
+    const legacyGroups: DeviceGroupType[] = [];
     const entityValues = Object.values(entities);
     
     // Debug: log entity filtering status
@@ -84,77 +156,24 @@ const Index = () => {
       e.entity_id.startsWith('light') || e.entity_id.startsWith('switch')
     );
     if (lightsAndSwitches.length > 0) {
-      groups.push({
+      legacyGroups.push({
         id: 'lights',
         name: 'Lights & Switches',
         entities: lightsAndSwitches,
-        type: 'light'
+        type: 'light',
+        column: 1
       });
     }
 
     // Climate controls
     const climate = entityValues.filter(e => e.entity_id.startsWith('climate'));
     if (climate.length > 0) {
-      groups.push({
+      legacyGroups.push({
         id: 'climate',
         name: 'Climate',
         entities: climate,
-        type: 'climate' as any
-      });
-    }
-
-    // Fans
-    const fans = entityValues.filter(e => e.entity_id.startsWith('fan'));
-    if (fans.length > 0) {
-      groups.push({
-        id: 'fans',
-        name: 'Fans',
-        entities: fans,
-        type: 'fan' as any
-      });
-    }
-
-    // Covers (blinds, curtains, etc.)
-    const covers = entityValues.filter(e => e.entity_id.startsWith('cover'));
-    if (covers.length > 0) {
-      groups.push({
-        id: 'covers',
-        name: 'Covers',
-        entities: covers,
-        type: 'cover' as any
-      });
-    }
-
-    // Media players
-    const mediaPlayers = entityValues.filter(e => e.entity_id.startsWith('media_player'));
-    if (mediaPlayers.length > 0) {
-      groups.push({
-        id: 'media_players',
-        name: 'Media Players',
-        entities: mediaPlayers,
-        type: 'media_player' as any
-      });
-    }
-
-    // Locks group
-    const locks = entityValues.filter(e => e.entity_id.includes('lock'));
-    if (locks.length > 0) {
-      groups.push({
-        id: 'locks',
-        name: 'Locks',
-        entities: locks,
-        type: 'lock'
-      });
-    }
-
-    // Binary sensors (doors, motion, etc.)
-    const binarySensors = entityValues.filter(e => e.entity_id.startsWith('binary_sensor'));
-    if (binarySensors.length > 0) {
-      groups.push({
-        id: 'binary_sensors',
-        name: 'Sensors',
-        entities: binarySensors,
-        type: 'binary_sensor'
+        type: 'climate' as any,
+        column: 1
       });
     }
 
@@ -164,128 +183,16 @@ const Index = () => {
       e.entity_id.includes('temperature')
     );
     if (temperatureSensors.length > 0) {
-      groups.push({
+      legacyGroups.push({
         id: 'temperature_sensors',
         name: 'Temperature',
         entities: temperatureSensors,
-        type: 'sensor'
+        type: 'sensor',
+        column: 1
       });
     }
 
-    // Device trackers
-    const deviceTrackers = entityValues.filter(e => e.entity_id.startsWith('device_tracker'));
-    if (deviceTrackers.length > 0) {
-      groups.push({
-        id: 'device_trackers',
-        name: 'Presence',
-        entities: deviceTrackers,
-        type: 'device_tracker'
-      });
-    }
-
-    // Person entities (added missing support)
-    const persons = entityValues.filter(e => e.entity_id.startsWith('person'));
-    if (persons.length > 0) {
-      groups.push({
-        id: 'persons',
-        name: 'People',
-        entities: persons,
-        type: 'person' as any
-      });
-    }
-
-    // Weather entities
-    const weather = entityValues.filter(e => e.entity_id.startsWith('weather'));
-    if (weather.length > 0) {
-      groups.push({
-        id: 'weather',
-        name: 'Weather',
-        entities: weather,
-        type: 'weather' as any
-      });
-    }
-
-    // Automation entities
-    const automations = entityValues.filter(e => e.entity_id.startsWith('automation'));
-    if (automations.length > 0) {
-      groups.push({
-        id: 'automations',
-        name: 'Automations',
-        entities: automations,
-        type: 'automation' as any
-      });
-    }
-
-    // Script entities
-    const scripts = entityValues.filter(e => e.entity_id.startsWith('script'));
-    if (scripts.length > 0) {
-      groups.push({
-        id: 'scripts',
-        name: 'Scripts',
-        entities: scripts,
-        type: 'script' as any
-      });
-    }
-
-    // Scene entities
-    const scenes = entityValues.filter(e => e.entity_id.startsWith('scene'));
-    if (scenes.length > 0) {
-      groups.push({
-        id: 'scenes',
-        name: 'Scenes',
-        entities: scenes,
-        type: 'scene' as any
-      });
-    }
-
-    // Input entities (input_boolean, input_number, etc.)
-    const inputs = entityValues.filter(e => e.entity_id.startsWith('input_'));
-    if (inputs.length > 0) {
-      groups.push({
-        id: 'inputs',
-        name: 'Input Controls',
-        entities: inputs,
-        type: 'input' as any
-      });
-    }
-
-    // Timer entities
-    const timers = entityValues.filter(e => e.entity_id.startsWith('timer'));
-    if (timers.length > 0) {
-      groups.push({
-        id: 'timers',
-        name: 'Timers',
-        entities: timers,
-        type: 'timer' as any
-      });
-    }
-
-    // Button entities
-    const buttons = entityValues.filter(e => e.entity_id.startsWith('button'));
-    if (buttons.length > 0) {
-      groups.push({
-        id: 'buttons',
-        name: 'Buttons',
-        entities: buttons,
-        type: 'button' as any
-      });
-    }
-
-    // Other sensor types (non-temperature)
-    const otherSensors = entityValues.filter(e => 
-      e.entity_id.startsWith('sensor') && 
-      !e.entity_id.includes('temperature')
-    );
-    if (otherSensors.length > 0) {
-      groups.push({
-        id: 'other_sensors',
-        name: 'Other Sensors',
-        entities: otherSensors,
-        type: 'sensor'
-      });
-    }
-
-    return groups;
+    return legacyGroups;
   };
 
   // Get camera entities
@@ -427,67 +334,82 @@ const Index = () => {
         </div>
       )}
 
-      {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Device Groups - Left Column */}
-        <div className="lg:col-span-4 space-y-6">
-          {deviceGroups.map((group) => (
-            <DeviceGroup
-              key={group.id}
-              group={group}
-              onEntityToggle={handleEntityToggle}
-            />
-          ))}
+      {/* Main Grid Layout - Dynamic Columns */}
+      <div 
+        className="grid gap-6" 
+        style={{ 
+          gridTemplateColumns: `repeat(${columns || 3}, 1fr)`,
+          display: 'grid'
+        }}
+      >
+        {Array.from({ length: columns || 3 }, (_, columnIndex) => {
+          const columnNumber = columnIndex + 1;
+          const columnGroups = deviceGroups.filter(group => (group as any).column === columnNumber);
+          const columnWidgets = getWidgetsForColumn(columnNumber);
           
-          {deviceGroups.length === 0 && !isLoading && (
-            <Card className="glass-effect">
-              <CardContent className="p-6 text-center">
-                <Home className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-muted-foreground">No devices found</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Camera Feeds - Center Column */}
-        <div className="lg:col-span-5 space-y-6">
-          <Card className="glass-effect">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Live Cameras
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {cameras.map((camera) => (
-                <CameraFeed
-                  key={camera.entity_id}
-                  camera={camera}
-                  baseUrl={config?.baseUrl}
-                  token={config?.token}
+          return (
+            <div key={columnNumber} className="space-y-6">
+              {/* Render groups for this column */}
+              {columnGroups.map((group) => (
+                <DeviceGroup
+                  key={group.id}
+                  group={group}
+                  onEntityToggle={handleEntityToggle}
                 />
               ))}
               
-              {cameras.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p>No cameras configured</p>
-                </div>
+              {/* Render camera widget for this column */}
+              {columnWidgets.some(w => w.type === 'cameras') && (
+                <Card className="glass-effect">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5" />
+                      Live Cameras
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {cameras.map((camera) => (
+                      <CameraFeed
+                        key={camera.entity_id}
+                        camera={camera}
+                        baseUrl={config?.baseUrl}
+                        token={config?.token}
+                      />
+                    ))}
+                    
+                    {cameras.length === 0 && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No cameras configured</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Alerts Panel - Right Column */}
-        <div className="lg:col-span-3 space-y-6">
-          <AlertsPanel 
-            alerts={alerts}
-            onDismissAlert={(alertId) => {
-              // Handle alert dismissal if needed
-              console.log('Dismiss alert:', alertId);
-            }}
-          />
-          
-        </div>
+              
+              {/* Render alerts widget for this column */}
+              {columnWidgets.some(w => w.type === 'alerts') && (
+                <AlertsPanel 
+                  alerts={alerts}
+                  onDismissAlert={(alertId) => {
+                    // Handle alert dismissal if needed
+                    console.log('Dismiss alert:', alertId);
+                  }}
+                />
+              )}
+              
+              {/* Show placeholder for empty columns */}
+              {columnGroups.length === 0 && columnWidgets.length === 0 && (
+                <Card className="glass-effect opacity-50">
+                  <CardContent className="p-6 text-center">
+                    <Home className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Column {columnNumber}</p>
+                    <p className="text-xs text-muted-foreground">Add groups or widgets in Settings</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Status Footer */}
