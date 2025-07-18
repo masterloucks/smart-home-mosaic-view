@@ -6,6 +6,7 @@ export interface CustomGroup {
   icon: string;
   entityIds: string[];
   order: number;
+  column: number;
 }
 
 interface GroupConfig {
@@ -21,63 +22,72 @@ const DEFAULT_GROUPS: CustomGroup[] = [
     name: 'Lights & Switches',
     icon: 'lightbulb',
     entityIds: [],
-    order: 1
+    order: 1,
+    column: 1
   },
   {
     id: 'climate',
     name: 'Climate',
     icon: 'thermometer',
     entityIds: [],
-    order: 2
+    order: 2,
+    column: 1
   },
   {
     id: 'fans',
     name: 'Fans',
     icon: 'fan',
     entityIds: [],
-    order: 3
+    order: 3,
+    column: 1
   },
   {
     id: 'covers',
     name: 'Covers',
     icon: 'wind',
     entityIds: [],
-    order: 4
+    order: 4,
+    column: 1
   },
   {
     id: 'media_players',
     name: 'Media Players',
     icon: 'volume-2',
     entityIds: [],
-    order: 5
+    order: 5,
+    column: 1
   },
   {
     id: 'locks',
     name: 'Locks',
     icon: 'lock',
     entityIds: [],
-    order: 6
+    order: 6,
+    column: 1
   },
   {
     id: 'sensors',
     name: 'Sensors',
     icon: 'activity',
     entityIds: [],
-    order: 7
+    order: 7,
+    column: 1
   },
   {
     id: 'people',
     name: 'People',
     icon: 'user',
     entityIds: [],
-    order: 8
+    order: 8,
+    column: 1
   },
   {
     id: 'weather',
     name: 'Weather',
     icon: 'cloud',
     entityIds: [],
-    order: 9
+    order: 9,
+    column: 1
   }
 ];
 
@@ -112,13 +122,14 @@ export const useGroupConfig = () => {
   }, []);
 
   // Create a new group
-  const createGroup = useCallback((name: string, icon: string) => {
+  const createGroup = useCallback((name: string, icon: string, column: number = 1) => {
     const newGroup: CustomGroup = {
       id: `custom_${Date.now()}`,
       name,
       icon,
       entityIds: [],
-      order: groups.length + 1
+      order: groups.length + 1,
+      column
     };
     const newGroups = [...groups, newGroup];
     saveGroups(newGroups);
@@ -188,6 +199,13 @@ export const useGroupConfig = () => {
     return groups.find(group => group.entityIds.includes(entityId));
   }, [groups]);
 
+  // Get groups for specific column
+  const getGroupsForColumn = useCallback((column: number) => {
+    return groups
+      .filter(group => group.column === column && group.entityIds.length > 0)
+      .sort((a, b) => a.order - b.order);
+  }, [groups]);
+
   return {
     groups: groups.sort((a, b) => a.order - b.order),
     createGroup,
@@ -197,6 +215,7 @@ export const useGroupConfig = () => {
     removeEntityFromGroup,
     reorderGroups,
     getUngroupedEntities,
-    getGroupByEntity
+    getGroupByEntity,
+    getGroupsForColumn
   };
 };

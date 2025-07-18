@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { GroupCustomization } from '@/components/GroupCustomization';
+import { LayoutCustomization } from '@/components/LayoutCustomization';
+import { SystemWidgetConfig } from '@/components/SystemWidgetConfig';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Search, X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -488,14 +491,39 @@ const EntityFilterConfig = () => {
             </div>
           </div>
 
-          {/* Group Customization Section */}
+          {/* Configuration Tabs */}
           <div className="mt-8">
-            <GroupCustomization
-              filteredEntities={entityFilter}
-              allEntities={allEntities}
-              getFriendlyName={getFriendlyName}
-              getEntityType={getEntityType}
-            />
+            <Tabs defaultValue="filter" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="filter">Entity Filter</TabsTrigger>
+                <TabsTrigger value="groups">Group Management</TabsTrigger>
+                <TabsTrigger value="layout">Layout & Columns</TabsTrigger>
+                <TabsTrigger value="widgets">System Widgets</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="filter" className="mt-6">
+                <div className="text-center py-4 text-muted-foreground">
+                  <p>Entity filtering is managed above. Use the search and add sections to configure your entity filter.</p>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="groups" className="mt-6">
+                <GroupCustomization 
+                  filteredEntities={entityFilter}
+                  allEntities={allEntities || {}}
+                  getFriendlyName={getFriendlyName}
+                  getEntityType={getEntityType}
+                />
+              </TabsContent>
+              
+              <TabsContent value="layout" className="mt-6">
+                <LayoutCustomization />
+              </TabsContent>
+              
+              <TabsContent value="widgets" className="mt-6">
+                <SystemWidgetConfig />
+              </TabsContent>
+            </Tabs>
           </div>
         </>
       )}
