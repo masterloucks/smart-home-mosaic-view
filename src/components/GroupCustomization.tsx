@@ -395,16 +395,14 @@ export const GroupCustomization = ({
                                 <Edit3 className="h-3 w-3" />
                               </Button>
                               
-                              {!['lights_switches', 'climate', 'fans', 'covers', 'media_players', 'locks', 'sensors', 'people', 'weather'].includes(group.id) && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDeleteGroup(group.id, group.name)}
-                                  className="text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteGroup(group.id, group.name)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
                             </div>
                           </div>
                           
