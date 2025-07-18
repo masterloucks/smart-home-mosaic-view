@@ -26,7 +26,18 @@ const EntityFilterConfig = () => {
 
   // Get all entities without filter
   const configWithoutFilter = config ? { ...config, entityFilter: undefined } : null;
-  const { entities: allEntities } = useHomeAssistant(configWithoutFilter);
+  const { entities: allEntities, isLoading, error, isConnected } = useHomeAssistant(configWithoutFilter);
+
+  // Debug logging for connection and entities
+  console.log('EntityFilterConfig Connection Debug:', {
+    config: !!config,
+    configWithoutFilter: !!configWithoutFilter,
+    isConnected,
+    isLoading,
+    error,
+    allEntitiesCount: Object.keys(allEntities || {}).length,
+    allEntitiesFirst5: Object.keys(allEntities || {}).slice(0, 5)
+  });
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEntities, setSelectedEntities] = useState<string[]>([]);
@@ -72,31 +83,45 @@ const EntityFilterConfig = () => {
 
   // Filter and search entities
   const filteredEntities = useMemo(() => {
-    const availableEntityIds = Object.keys(allEntities);
+    const availableEntityIds = Object.keys(allEntities || {});
     
     // Debug logging
-    console.log('EntityFilterConfig Debug:', {
+    console.log('EntityFilterConfig Search Debug:', {
       searchTerm,
       allEntitiesCount: availableEntityIds.length,
-      allEntitiesKeys: availableEntityIds.slice(0, 10), // First 10 for debugging
-      entityFilterCount: entityFilter.length
+      allEntitiesFirst10: availableEntityIds.slice(0, 10), // First 10 for debugging
+      entityFilterCount: entityFilter.length,
+      isEmptyAllEntities: Object.keys(allEntities || {}).length === 0
     });
     
     if (!searchTerm) return [];
+    if (!allEntities || Object.keys(allEntities).length === 0) {
+      console.log('No entities available for search');
+      return [];
+    }
     
-    return availableEntityIds
+    const results = availableEntityIds
       .filter(entityId => {
         const friendlyName = getFriendlyName(entityId);
         const entityType = getEntityType(entityId);
         
-        return (
+        const matches = (
           entityId.toLowerCase().includes(searchTerm.toLowerCase()) ||
           friendlyName.toLowerCase().includes(searchTerm.toLowerCase()) ||
           entityType.toLowerCase().includes(searchTerm.toLowerCase())
         );
+        
+        if (matches) {
+          console.log('Found match:', { entityId, friendlyName, entityType, searchTerm });
+        }
+        
+        return matches;
       })
       .filter(entityId => !entityFilter.includes(entityId))
       .slice(0, 100); // Limit results for performance
+      
+    console.log('Search results count:', results.length);
+    return results;
   }, [allEntities, searchTerm, entityFilter]);
 
   const handleSelectEntity = (entityId: string, checked: boolean) => {
