@@ -98,10 +98,10 @@ export const useSystemWidgets = () => {
     saveWidgets(newWidgets);
   }, [widgets, saveWidgets]);
 
-  // Get widgets for specific column
+  // Get widgets for specific column (0 = hidden/none)
   const getWidgetsForColumn = useCallback((column: number) => {
     return widgets
-      .filter(widget => widget.enabled && widget.column === column)
+      .filter(widget => widget.enabled && widget.column === column && widget.column > 0)
       .sort((a, b) => a.order - b.order);
   }, [widgets]);
 

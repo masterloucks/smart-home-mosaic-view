@@ -1,4 +1,5 @@
 import { useSystemWidgets } from '@/hooks/useSystemWidgets';
+import { useLayoutConfig } from '@/hooks/useLayoutConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,7 @@ const WIDGET_DESCRIPTIONS = {
 
 export const SystemWidgetConfig = () => {
   const { widgets, updateWidget, toggleWidget, addWidget, removeWidget } = useSystemWidgets();
+  const { layoutConfig } = useLayoutConfig();
   const { toast } = useToast();
 
   const handleToggleWidget = (widgetId: string) => {
@@ -52,6 +54,17 @@ export const SystemWidgetConfig = () => {
     toast({
       title: "Widget Reordered",
       description: `Updated order for "${widget?.name}"`,
+    });
+  };
+
+  const handleColumnChange = (widgetId: string, newColumn: string) => {
+    const columnNumber = parseInt(newColumn);
+    updateWidget(widgetId, { column: columnNumber });
+    const widget = widgets.find(w => w.id === widgetId);
+    const columnText = columnNumber === 0 ? 'None (hidden)' : `Column ${columnNumber}`;
+    toast({
+      title: "Widget Placement Updated",
+      description: `Moved "${widget?.name}" to ${columnText}`,
     });
   };
 
@@ -174,6 +187,12 @@ export const SystemWidgetConfig = () => {
                       >
                         {widget.enabled ? 'Enabled' : 'Disabled'}
                       </Badge>
+                      <Badge 
+                        variant={widget.column === 0 ? "outline" : "secondary"}
+                        className="text-xs"
+                      >
+                        {widget.column === 0 ? 'Hidden' : `Col ${widget.column}`}
+                      </Badge>
                       {isCore && (
                         <Badge variant="outline" className="text-xs">
                           Core
@@ -184,6 +203,26 @@ export const SystemWidgetConfig = () => {
                   
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Column:</span>
+                      <Select 
+                        value={widget.column.toString()} 
+                        onValueChange={(value) => handleColumnChange(widget.id, value)}
+                      >
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-background border shadow-md">
+                          <SelectItem value="0">None</SelectItem>
+                          {Array.from({ length: layoutConfig?.columns || 3 }, (_, i) => (
+                            <SelectItem key={i + 1} value={(i + 1).toString()}>
+                              {i + 1}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Order:</span>
                       <Select 
                         value={widget.order.toString()} 
@@ -192,7 +231,7 @@ export const SystemWidgetConfig = () => {
                         <SelectTrigger className="w-16">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-background border shadow-md">
                           {Array.from({ length: widgets.length }, (_, i) => (
                             <SelectItem key={i + 1} value={(i + 1).toString()}>
                               {i + 1}
