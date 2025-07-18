@@ -16,7 +16,8 @@ import {
   LightbulbOff,
   Fan,
   Volume2,
-  Wind
+  Wind,
+  User
 } from 'lucide-react';
 import { HAEntity } from '@/types/homeassistant';
 import { cn } from '@/lib/utils';
@@ -62,6 +63,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
     if (entityId.startsWith('device_tracker')) {
       return entity.state === 'home' ? <Home className={iconClass} /> : <Smartphone className={iconClass} />;
     }
+    if (entityId.startsWith('person')) {
+      return entity.state === 'home' ? <User className={iconClass} /> : <User className={cn(iconClass, "opacity-50")} />;
+    }
 
     return <Activity className={iconClass} />;
   };
@@ -100,6 +104,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
       return 'text-success';
     }
     if (entityId.startsWith('device_tracker')) {
+      return entity.state === 'home' ? 'text-success' : 'text-muted-foreground';
+    }
+    if (entityId.startsWith('person')) {
       return entity.state === 'home' ? 'text-success' : 'text-muted-foreground';
     }
     
@@ -141,6 +148,9 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
       return entity.state === 'on' ? 'Motion' : 'Clear';
     }
     if (entityId.startsWith('device_tracker')) {
+      return entity.state === 'home' ? 'Home' : 'Away';
+    }
+    if (entityId.startsWith('person')) {
       return entity.state === 'home' ? 'Home' : 'Away';
     }
 
