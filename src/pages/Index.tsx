@@ -183,6 +183,17 @@ const Index = () => {
       });
     }
 
+    // Person entities (added missing support)
+    const persons = entityValues.filter(e => e.entity_id.startsWith('person'));
+    if (persons.length > 0) {
+      groups.push({
+        id: 'persons',
+        name: 'People',
+        entities: persons,
+        type: 'person' as any
+      });
+    }
+
     return groups;
   };
 

@@ -57,6 +57,8 @@ const EntityFilterConfig = () => {
         return 'Camera';
       case 'device_tracker':
         return 'Device Tracker';
+      case 'person':
+        return 'Person';
       default:
         return domain.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
@@ -71,6 +73,14 @@ const EntityFilterConfig = () => {
   // Filter and search entities
   const filteredEntities = useMemo(() => {
     const availableEntityIds = Object.keys(allEntities);
+    
+    // Debug logging
+    console.log('EntityFilterConfig Debug:', {
+      searchTerm,
+      allEntitiesCount: availableEntityIds.length,
+      allEntitiesKeys: availableEntityIds.slice(0, 10), // First 10 for debugging
+      entityFilterCount: entityFilter.length
+    });
     
     if (!searchTerm) return [];
     
