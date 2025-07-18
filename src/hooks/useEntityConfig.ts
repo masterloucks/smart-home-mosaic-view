@@ -33,7 +33,7 @@ const DEFAULT_ENTITY_FILTER = [
 ];
 
 export const useEntityConfig = () => {
-  const [entityFilter, setEntityFilter] = useState<string[]>(DEFAULT_ENTITY_FILTER);
+  const [entityFilter, setEntityFilter] = useState<string[]>([]);  // Start with empty array
   const [isFilterEnabled, setIsFilterEnabled] = useState(true);
 
   // Load configuration from localStorage
@@ -62,7 +62,8 @@ export const useEntityConfig = () => {
   };
 
   const getEffectiveFilter = () => {
-    return isFilterEnabled ? entityFilter : undefined;
+    // Only return filter if enabled AND has entities, otherwise return empty array to show nothing
+    return isFilterEnabled && entityFilter.length > 0 ? entityFilter : [];
   };
 
   return {
