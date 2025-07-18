@@ -110,14 +110,63 @@ const Index = () => {
       filterCount: configWithFilter?.entityFilter?.length || 0,
       totalEntities: entityValues.length,
       actualEntityIds: Object.keys(entities),
-      filterEntities: configWithFilter?.entityFilter
+      filterEntities: configWithFilter?.entityFilter,
+      configuredGroups: groups.map(g => ({ id: g.id, name: g.name, column: g.column, entityCount: g.entityIds.length }))
     });
 
-    return groups.map(group => {
-      // Get entities that belong to this group based on their entity IDs stored in the group
-      const groupEntities = group.entityIds
-        .map(entityId => entities[entityId])
-        .filter(entity => entity !== undefined);
+    // Auto-assign entities to groups based on domain if groups are empty
+    const groupsWithEntities = groups.map(group => {
+      let groupEntities = [];
+      
+      // If group already has entities assigned, use them
+      if (group.entityIds.length > 0) {
+        groupEntities = group.entityIds
+          .map(entityId => entities[entityId])
+          .filter(entity => entity !== undefined);
+      } else {
+        // Auto-assign based on group ID and entity domains
+        switch (group.id) {
+          case 'lights_switches':
+            groupEntities = entityValues.filter(e => 
+              e.entity_id.startsWith('light') || e.entity_id.startsWith('switch')
+            );
+            break;
+          case 'climate':
+            groupEntities = entityValues.filter(e => 
+              e.entity_id.startsWith('climate') ||
+              (e.entity_id.startsWith('sensor') && e.entity_id.includes('temperature'))
+            );
+            break;
+          case 'fans':
+            groupEntities = entityValues.filter(e => e.entity_id.startsWith('fan'));
+            break;
+          case 'covers':
+            groupEntities = entityValues.filter(e => e.entity_id.startsWith('cover'));
+            break;
+          case 'media_players':
+            groupEntities = entityValues.filter(e => e.entity_id.startsWith('media_player'));
+            break;
+          case 'locks':
+            groupEntities = entityValues.filter(e => e.entity_id.includes('lock'));
+            break;
+          case 'sensors':
+            groupEntities = entityValues.filter(e => 
+              e.entity_id.startsWith('binary_sensor') ||
+              (e.entity_id.startsWith('sensor') && !e.entity_id.includes('temperature'))
+            );
+            break;
+          case 'people':
+            groupEntities = entityValues.filter(e => 
+              e.entity_id.startsWith('person') || e.entity_id.startsWith('device_tracker')
+            );
+            break;
+          case 'weather':
+            groupEntities = entityValues.filter(e => e.entity_id.startsWith('weather'));
+            break;
+          default:
+            groupEntities = [];
+        }
+      }
 
       return {
         id: group.id,
@@ -127,29 +176,31 @@ const Index = () => {
         column: group.column
       };
     }).filter(group => group.entities.length > 0);
+
+    console.log('Configured groups with entities:', groupsWithEntities.map(g => ({ 
+      id: g.id, 
+      name: g.name, 
+      column: g.column, 
+      entityCount: g.entities.length,
+      entities: g.entities.map(e => e.entity_id)
+    })));
+
+    return groupsWithEntities;
   };
 
-  // Legacy groupEntities function for backward compatibility during transition
+  // Main groupEntities function
   const groupEntities = (): DeviceGroupType[] => {
-    // If groups have entities assigned, use the new system
-    const hasConfiguredGroups = groups.some(g => g.entityIds.length > 0);
-    if (hasConfiguredGroups) {
-      return groupEntitiesByConfig();
+    // Always try to use the configured groups first
+    const configuredGroups = groupEntitiesByConfig();
+    if (configuredGroups.length > 0) {
+      return configuredGroups;
     }
 
-    // Otherwise fall back to the old automatic grouping system
+    // Fallback to legacy system only if no groups are configured at all
     const legacyGroups: DeviceGroupType[] = [];
     const entityValues = Object.values(entities);
     
-    // Debug: log entity filtering status
-    console.log('Entity filter status:', { 
-      isConnected,
-      isFilterEnabled: configWithFilter?.entityFilter !== undefined,
-      filterCount: configWithFilter?.entityFilter?.length || 0,
-      totalEntities: entityValues.length,
-      actualEntityIds: Object.keys(entities),
-      filterEntities: configWithFilter?.entityFilter
-    });
+    console.log('Using legacy grouping system');
 
     // Lights and switches group (combined as requested)
     const lightsAndSwitches = entityValues.filter(e => 
