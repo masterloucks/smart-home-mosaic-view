@@ -17,7 +17,8 @@ import {
   WifiOff, 
   RefreshCw,
   Clock,
-  Bug
+  Bug,
+  Settings
 } from 'lucide-react';
 import { DeviceGroup as DeviceGroupType, CameraEntity } from '@/types/homeassistant';
 import { Link } from 'react-router-dom';
@@ -288,6 +289,17 @@ const Index = () => {
             </Button>
           </Link>
           
+          <Link to="/entity-filter">
+            <Button
+              variant="outline"
+              size="sm"
+              className="touch-target"
+            >
+              <Settings className="h-4 w-4 mr-2" />
+              Entity Filter
+            </Button>
+          </Link>
+          
           <Button
             variant="outline"
             size="sm"
@@ -373,8 +385,6 @@ const Index = () => {
             }}
           />
           
-          {/* Entity Filter Configuration */}
-          <EntityFilterConfig availableEntities={Object.keys(allEntities)} />
         </div>
       </div>
 
