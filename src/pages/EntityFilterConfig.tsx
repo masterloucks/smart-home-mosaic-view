@@ -500,7 +500,7 @@ const EntityFilterConfig = () => {
         
         <TabsContent value="groups">
           <GroupCustomization 
-            filteredEntities={filteredEntities}
+            filteredEntities={entityFilter}
             allEntities={allEntities || {}}
             getFriendlyName={getFriendlyName}
             getEntityType={getEntityType}
