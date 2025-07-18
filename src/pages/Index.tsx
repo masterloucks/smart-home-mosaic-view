@@ -78,14 +78,60 @@ const Index = () => {
       filterEntities: configWithFilter?.entityFilter
     });
 
-    // Lights group
-    const lights = entityValues.filter(e => e.entity_id.startsWith('light'));
-    if (lights.length > 0) {
+    // Lights and switches group (combined as requested)
+    const lightsAndSwitches = entityValues.filter(e => 
+      e.entity_id.startsWith('light') || e.entity_id.startsWith('switch')
+    );
+    if (lightsAndSwitches.length > 0) {
       groups.push({
         id: 'lights',
-        name: 'Lights',
-        entities: lights,
+        name: 'Lights & Switches',
+        entities: lightsAndSwitches,
         type: 'light'
+      });
+    }
+
+    // Climate controls
+    const climate = entityValues.filter(e => e.entity_id.startsWith('climate'));
+    if (climate.length > 0) {
+      groups.push({
+        id: 'climate',
+        name: 'Climate',
+        entities: climate,
+        type: 'climate' as any
+      });
+    }
+
+    // Fans
+    const fans = entityValues.filter(e => e.entity_id.startsWith('fan'));
+    if (fans.length > 0) {
+      groups.push({
+        id: 'fans',
+        name: 'Fans',
+        entities: fans,
+        type: 'fan' as any
+      });
+    }
+
+    // Covers (blinds, curtains, etc.)
+    const covers = entityValues.filter(e => e.entity_id.startsWith('cover'));
+    if (covers.length > 0) {
+      groups.push({
+        id: 'covers',
+        name: 'Covers',
+        entities: covers,
+        type: 'cover' as any
+      });
+    }
+
+    // Media players
+    const mediaPlayers = entityValues.filter(e => e.entity_id.startsWith('media_player'));
+    if (mediaPlayers.length > 0) {
+      groups.push({
+        id: 'media_players',
+        name: 'Media Players',
+        entities: mediaPlayers,
+        type: 'media_player' as any
       });
     }
 
@@ -151,12 +197,42 @@ const Index = () => {
     if (!entity) return;
 
     try {
-      if (entityId.startsWith('light')) {
+      if (entityId.startsWith('light') || entityId.startsWith('switch')) {
+        const domain = entityId.startsWith('light') ? 'light' : 'switch';
         const service = entity.state === 'on' ? 'turn_off' : 'turn_on';
-        await callService('light', service, entityId);
+        await callService(domain, service, entityId);
         toast({
-          title: "Light Updated",
+          title: "Device Updated",
           description: `${entity.attributes.friendly_name || entityId} ${entity.state === 'on' ? 'turned off' : 'turned on'}`,
+        });
+      } else if (entityId.startsWith('fan')) {
+        const service = entity.state === 'on' ? 'turn_off' : 'turn_on';
+        await callService('fan', service, entityId);
+        toast({
+          title: "Fan Updated",
+          description: `${entity.attributes.friendly_name || entityId} ${entity.state === 'on' ? 'turned off' : 'turned on'}`,
+        });
+      } else if (entityId.startsWith('cover')) {
+        const service = entity.state === 'open' ? 'close_cover' : 'open_cover';
+        await callService('cover', service, entityId);
+        toast({
+          title: "Cover Updated",
+          description: `${entity.attributes.friendly_name || entityId} ${entity.state === 'open' ? 'closed' : 'opened'}`,
+        });
+      } else if (entityId.startsWith('media_player')) {
+        const service = entity.state === 'playing' ? 'media_pause' : 'media_play';
+        await callService('media_player', service, entityId);
+        toast({
+          title: "Media Player Updated",
+          description: `${entity.attributes.friendly_name || entityId} ${entity.state === 'playing' ? 'paused' : 'playing'}`,
+        });
+      } else if (entityId.startsWith('climate')) {
+        // For climate, increase temperature by 1°C
+        const currentTemp = entity.attributes.temperature || 20;
+        await callService('climate', 'set_temperature', entityId, { temperature: currentTemp + 1 });
+        toast({
+          title: "Climate Updated",
+          description: `${entity.attributes.friendly_name || entityId} temperature increased`,
         });
       } else if (entityId.includes('lock')) {
         const service = entity.state === 'locked' ? 'unlock' : 'lock';
