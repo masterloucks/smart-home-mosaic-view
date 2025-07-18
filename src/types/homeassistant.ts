@@ -70,5 +70,5 @@ export type DeviceGroup = {
   id: string;
   name: string;
   entities: HAEntity[];
-  type: 'sensor' | 'binary_sensor' | 'lock' | 'device_tracker' | 'camera';
+  type: 'sensor' | 'binary_sensor' | 'lock' | 'device_tracker' | 'camera' | 'light';
 };

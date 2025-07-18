@@ -78,6 +78,17 @@ const Index = () => {
       filterEntities: configWithFilter?.entityFilter
     });
 
+    // Lights group
+    const lights = entityValues.filter(e => e.entity_id.startsWith('light'));
+    if (lights.length > 0) {
+      groups.push({
+        id: 'lights',
+        name: 'Lights',
+        entities: lights,
+        type: 'light'
+      });
+    }
+
     // Locks group
     const locks = entityValues.filter(e => e.entity_id.includes('lock'));
     if (locks.length > 0) {
@@ -140,7 +151,14 @@ const Index = () => {
     if (!entity) return;
 
     try {
-      if (entityId.includes('lock')) {
+      if (entityId.startsWith('light')) {
+        const service = entity.state === 'on' ? 'turn_off' : 'turn_on';
+        await callService('light', service, entityId);
+        toast({
+          title: "Light Updated",
+          description: `${entity.attributes.friendly_name || entityId} ${entity.state === 'on' ? 'turned off' : 'turned on'}`,
+        });
+      } else if (entityId.includes('lock')) {
         const service = entity.state === 'locked' ? 'unlock' : 'lock';
         await callService('lock', service, entityId);
         toast({

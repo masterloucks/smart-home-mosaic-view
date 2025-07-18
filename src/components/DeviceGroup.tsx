@@ -8,7 +8,8 @@ import {
   Smartphone, 
   DoorOpen,
   Camera,
-  Activity
+  Activity,
+  Lightbulb
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,8 @@ interface DeviceGroupProps {
 export const DeviceGroup = ({ group, onEntityToggle, className }: DeviceGroupProps) => {
   const getGroupIcon = (type: string) => {
     switch (type) {
+      case 'light':
+        return <Lightbulb className="h-5 w-5" />;
       case 'lock':
         return <Lock className="h-5 w-5" />;
       case 'sensor':
@@ -39,6 +42,8 @@ export const DeviceGroup = ({ group, onEntityToggle, className }: DeviceGroupPro
   const getActiveCount = () => {
     return group.entities.filter(entity => {
       switch (group.type) {
+        case 'light':
+          return entity.state === 'on';
         case 'lock':
           return entity.state === 'unlocked';
         case 'binary_sensor':
