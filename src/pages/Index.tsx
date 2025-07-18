@@ -67,6 +67,16 @@ const Index = () => {
   const groupEntities = (): DeviceGroupType[] => {
     const groups: DeviceGroupType[] = [];
     const entityValues = Object.values(entities);
+    
+    // Debug: log entity filtering status
+    console.log('Entity filter status:', { 
+      isConnected,
+      isFilterEnabled: configWithFilter?.entityFilter !== undefined,
+      filterCount: configWithFilter?.entityFilter?.length || 0,
+      totalEntities: entityValues.length,
+      actualEntityIds: Object.keys(entities),
+      filterEntities: configWithFilter?.entityFilter
+    });
 
     // Locks group
     const locks = entityValues.filter(e => e.entity_id.includes('lock'));

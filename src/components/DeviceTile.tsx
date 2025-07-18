@@ -129,8 +129,8 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
           <div className={cn('text-xs font-medium truncate max-w-full', getStatusColor())}>
             {getDisplayValue()}
           </div>
-          <div className="text-[10px] text-muted-foreground truncate max-w-full mt-0.5">
-            {friendlyName.split(' ').slice(-1)[0]}
+          <div className="text-[10px] text-muted-foreground truncate max-w-full mt-0.5" title={friendlyName}>
+            {friendlyName}
           </div>
         </div>
       </CardContent>
