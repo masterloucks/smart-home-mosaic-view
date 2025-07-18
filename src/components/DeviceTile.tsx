@@ -237,11 +237,11 @@ export const DeviceTile = ({ entity, onToggle, className }: DeviceTileProps) => 
           </div>
         </div>
         
-        <div className="text-center">
-          <div className={cn('text-xs font-medium truncate max-w-full', getStatusColor())}>
+        <div className="text-center flex-1 flex flex-col justify-end">
+          <div className={cn('text-xs font-medium line-clamp-1 max-w-full', getStatusColor())}>
             {getDisplayValue()}
           </div>
-          <div className="text-[10px] text-muted-foreground truncate max-w-full mt-0.5" title={friendlyName}>
+          <div className="text-[10px] text-muted-foreground line-clamp-2 max-w-full mt-0.5 leading-tight" title={friendlyName}>
             {friendlyName}
           </div>
         </div>
