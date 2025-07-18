@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 const EntityFilterConfig = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { config } = useSecureConfig();
+  const { config, isConfigured } = useSecureConfig();
   const { 
     entityFilter, 
     isFilterEnabled, 
@@ -24,14 +24,17 @@ const EntityFilterConfig = () => {
     removeEntity 
   } = useEntityConfig();
 
-  // Get all entities without filter
-  const configWithoutFilter = config ? { ...config, entityFilter: undefined } : null;
+  // Get all entities without filter - only if configured
+  const configWithoutFilter = (config && isConfigured) ? { ...config, entityFilter: undefined } : null;
   const { entities: allEntities, isLoading, error, isConnected } = useHomeAssistant(configWithoutFilter);
 
   // Debug logging for connection and entities
   console.log('EntityFilterConfig Connection Debug:', {
     config: !!config,
+    isConfigured,
     configWithoutFilter: !!configWithoutFilter,
+    baseUrl: config?.baseUrl,
+    hasToken: !!config?.token,
     isConnected,
     isLoading,
     error,
@@ -210,6 +213,18 @@ const EntityFilterConfig = () => {
       </div>
 
       {/* Main Layout */}
+      {!isConfigured ? (
+        <Card>
+          <CardContent className="p-6 text-center">
+            <p className="text-muted-foreground mb-4">
+              Home Assistant is not configured. Please return to the dashboard and configure your connection first.
+            </p>
+            <Button onClick={() => navigate('/')}>
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Search and Add Panel - 75% width */}
         <div className="lg:col-span-3">
@@ -388,6 +403,7 @@ const EntityFilterConfig = () => {
           </Card>
         </div>
       </div>
+      )}
     </div>
   );
 };
