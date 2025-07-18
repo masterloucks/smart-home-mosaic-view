@@ -245,19 +245,8 @@ const EntityFilterConfig = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Search Input */}
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search entities by name, ID, or type..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Entity Type Filters */}
-              {searchTerm && availableEntityTypes.length > 0 && (
+              {/* Entity Type Filters - Always visible */}
+              {availableEntityTypes.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-sm font-medium">Filter by type:</div>
                   <div className="flex flex-wrap gap-2">
@@ -276,6 +265,17 @@ const EntityFilterConfig = () => {
                   </div>
                 </div>
               )}
+
+              {/* Search Input */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search entities by name, ID, or type..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
               {/* Bulk Actions */}
               {filteredEntities.length > 0 && (
