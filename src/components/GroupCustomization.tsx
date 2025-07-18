@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useGroupConfig, CustomGroup } from '@/hooks/useGroupConfig';
+import { useEntityConfig } from '@/hooks/useEntityConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,8 @@ export const GroupCustomization = ({
     removeEntityFromGroup,
     getUngroupedEntities 
   } = useGroupConfig();
+
+  const { removeEntity } = useEntityConfig();
   
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
@@ -111,6 +114,22 @@ export const GroupCustomization = ({
     });
   };
 
+  const handleRemoveEntity = (entityId: string) => {
+    removeEntity(entityId);
+    toast({
+      title: "Entity Removed",
+      description: `Removed ${getFriendlyName(entityId)} from filter`,
+    });
+  };
+
+  const handleRemoveAllUngrouped = () => {
+    ungroupedEntities.forEach(entityId => removeEntity(entityId));
+    toast({
+      title: "All Entities Removed",
+      description: `Removed ${ungroupedEntities.length} ungrouped entities from filter`,
+    });
+  };
+
   const getIconComponent = (iconName: string) => {
     const iconOption = ICON_OPTIONS.find(opt => opt.value === iconName);
     if (iconOption) {
@@ -126,21 +145,36 @@ export const GroupCustomization = ({
       {ungroupedEntities.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-600">
-              <AlertTriangle className="h-5 w-5" />
-              Ungrouped Entities ({ungroupedEntities.length})
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              These entities have been added to the filter but aren't assigned to any group. 
-              They won't appear on the dashboard until grouped.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-orange-600">
+                  <AlertTriangle className="h-5 w-5" />
+                  Ungrouped Entities ({ungroupedEntities.length})
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  These entities have been added to the filter but aren't assigned to any group. 
+                  They won't appear on the dashboard until grouped.
+                </p>
+              </div>
+              {ungroupedEntities.length > 1 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleRemoveAllUngrouped}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove All
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-40 overflow-y-auto">
               {ungroupedEntities.map((entityId) => (
                 <div 
                   key={entityId}
-                  className="flex items-center justify-between p-2 border rounded hover:bg-muted/50"
+                  className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">
@@ -151,18 +185,29 @@ export const GroupCustomization = ({
                     </div>
                   </div>
                   
-                  <Select onValueChange={(groupId) => handleAddToGroup(entityId, groupId)}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Add to..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {groups.map((group) => (
-                        <SelectItem key={group.id} value={group.id}>
-                          {group.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select onValueChange={(groupId) => handleAddToGroup(entityId, groupId)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Add to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveEntity(entityId)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
