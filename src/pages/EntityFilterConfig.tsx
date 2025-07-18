@@ -14,6 +14,7 @@ import { SystemWidgetConfig } from '@/components/SystemWidgetConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, Search, X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { SecurityConfig } from '@/components/SecurityConfig';
 
 const EntityFilterConfig = () => {
   const navigate = useNavigate();
@@ -254,9 +255,9 @@ const EntityFilterConfig = () => {
             Back to Dashboard
           </Button>
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold">Entity Filter Configuration</h1>
+            <h1 className="text-2xl lg:text-3xl font-bold">Settings</h1>
             <p className="text-sm text-muted-foreground">
-              Manage which entities appear on your dashboard
+              Configure your Home Assistant connection and manage entities
             </p>
           </div>
         </div>
@@ -276,257 +277,240 @@ const EntityFilterConfig = () => {
         </div>
       </div>
 
-      {/* Main Layout */}
-      {!isConfigured ? (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground mb-4">
-              Home Assistant is not configured. Please return to the dashboard and configure your connection first.
-            </p>
-            <Button onClick={() => navigate('/')}>
-              Go to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Search and Add Panel - 75% width */}
-            <div className="lg:col-span-3">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Search className="h-5 w-5" />
-                    Search & Add Entities
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Entity Type Filters - Always visible */}
-                  {availableEntityTypes.length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium">Filter by type:</div>
-                      <div className="flex flex-wrap gap-2">
-                        {availableEntityTypes.map(entityType => (
-                          <label
-                            key={entityType}
-                            className="flex items-center gap-2 text-sm cursor-pointer"
-                          >
-                            <Checkbox
-                              checked={selectedEntityTypes.includes(entityType)}
-                              onCheckedChange={(checked) => handleEntityTypeToggle(entityType, checked as boolean)}
-                            />
-                            <span className="text-xs">{entityType}</span>
-                          </label>
-                        ))}
+      {/* Main Content */}
+      <Tabs defaultValue="connection" className="space-y-6">
+        <TabsList className="grid grid-cols-4 w-[600px]">
+          <TabsTrigger value="connection">Home Assistant</TabsTrigger>
+          <TabsTrigger value="entities">Entity Filter</TabsTrigger>
+          <TabsTrigger value="groups">Groups</TabsTrigger>
+          <TabsTrigger value="layout">Layout</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="connection">
+          <SecurityConfig 
+            onConfigSaved={() => {}} 
+            isConnected={isConnected} 
+          />
+        </TabsContent>
+        
+        <TabsContent value="entities">
+          {!isConfigured ? (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground mb-4">
+                  Home Assistant is not configured. Please configure your connection in the Home Assistant tab first.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Search and Add Panel - 75% width */}
+              <div className="lg:col-span-3">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Search className="h-5 w-5" />
+                      Search & Add Entities
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {/* Entity Type Filters - Always visible */}
+                    {availableEntityTypes.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Filter by type:</div>
+                        <div className="flex flex-wrap gap-2">
+                          {availableEntityTypes.map(entityType => (
+                            <label
+                              key={entityType}
+                              className="flex items-center gap-2 text-sm cursor-pointer"
+                            >
+                              <Checkbox
+                                checked={selectedEntityTypes.includes(entityType)}
+                                onCheckedChange={(checked) => handleEntityTypeToggle(entityType, checked as boolean)}
+                              />
+                              <span className="text-xs">{entityType}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
+                    )}
+
+                    {/* Search Input */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search entities by name, ID, or type..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
                     </div>
-                  )}
 
-                  {/* Search Input */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search entities by name, ID, or type..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-
-                  {/* Bulk Actions */}
-                  {filteredEntities.length > 0 && (
-                    <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          checked={selectedEntities.length === filteredEntities.length}
-                          onCheckedChange={handleSelectAll}
-                        />
-                        <span className="text-xs">
-                          {selectedEntities.length > 0 
-                            ? `${selectedEntities.length} selected` 
-                            : 'Select all'
-                          }
-                        </span>
+                    {/* Bulk Actions */}
+                    {filteredEntities.length > 0 && (
+                      <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            checked={selectedEntities.length === filteredEntities.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                          <span className="text-xs">
+                            {selectedEntities.length > 0 
+                              ? `${selectedEntities.length} selected` 
+                              : 'Select all'
+                            }
+                          </span>
+                        </div>
+                        
+                        {selectedEntities.length > 0 && (
+                          <Button 
+                            size="sm"
+                            onClick={handleAddSelected}
+                            className="flex items-center gap-1 text-xs"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add Selected ({selectedEntities.length})
+                          </Button>
+                        )}
                       </div>
-                      
-                      {selectedEntities.length > 0 && (
-                        <Button 
-                          size="sm"
-                          onClick={handleAddSelected}
-                          className="flex items-center gap-1 text-xs"
+                    )}
+
+                    {/* Search Results */}
+                    <div className="space-y-1 max-h-96 overflow-y-auto">
+                      {filteredEntities.map((entityId) => (
+                        <div 
+                          key={entityId}
+                          className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
                         >
-                          <Plus className="h-3 w-3" />
-                          Add Selected ({selectedEntities.length})
+                          <Checkbox
+                            checked={selectedEntities.includes(entityId)}
+                            onCheckedChange={(checked) => handleSelectEntity(entityId, checked as boolean)}
+                          />
+                          
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">
+                              {getFriendlyName(entityId)}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {entityId}
+                            </div>
+                          </div>
+                          
+                          <Badge variant="outline" className="text-xs px-1 py-0">
+                            {getEntityType(entityId)}
+                          </Badge>
+                          
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              addEntity(entityId);
+                              toast({
+                                title: "Entity Added",
+                                description: `Added ${getFriendlyName(entityId)} to the filter`,
+                              });
+                            }}
+                            className="flex items-center gap-1 h-7 px-2 text-xs"
+                          >
+                            <Plus className="h-3 w-3" />
+                            Add
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      {searchTerm && filteredEntities.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p>No entities found matching "{searchTerm}"</p>
+                        </div>
+                      )}
+                      
+                      {!searchTerm && filteredEntities.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p>No entities available to add</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Currently Added Entities Panel - 25% width */}
+              <div className="lg:col-span-1">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2 text-lg">
+                        Added Entities
+                      </CardTitle>
+                      {entityFilter.length > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleClearAll}
+                          className="flex items-center gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Clear All
                         </Button>
                       )}
                     </div>
-                  )}
-
-                  {/* Search Results */}
-                  <div className="space-y-1 max-h-96 overflow-y-auto">
-                    {filteredEntities.map((entityId) => (
-                      <div 
-                        key={entityId}
-                        className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
-                      >
-                        <Checkbox
-                          checked={selectedEntities.includes(entityId)}
-                          onCheckedChange={(checked) => handleSelectEntity(entityId, checked as boolean)}
-                        />
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">
-                            {getFriendlyName(entityId)}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {entityId}
-                          </div>
-                        </div>
-                        
-                        <Badge variant="outline" className="text-xs px-1 py-0">
-                          {getEntityType(entityId)}
-                        </Badge>
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            addEntity(entityId);
-                            toast({
-                              title: "Entity Added",
-                              description: `Added ${getFriendlyName(entityId)} to the filter`,
-                            });
-                          }}
-                          className="flex items-center gap-1 h-7 px-2 text-xs"
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1 max-h-96 overflow-y-auto">
+                      {entityFilter.map((entityId) => (
+                        <div 
+                          key={entityId}
+                          className="flex items-center gap-2 p-1.5 border rounded hover:bg-muted/50"
                         >
-                          <Plus className="h-3 w-3" />
-                          Add
-                        </Button>
-                      </div>
-                    ))}
-                    
-                    {searchTerm && filteredEntities.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No entities found matching "{searchTerm}"</p>
-                      </div>
-                    )}
-                    
-                    {!searchTerm && filteredEntities.length === 0 && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                        <p>No entities available to add</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Currently Added Entities Panel - 25% width */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-lg">
-                      Added Entities
-                    </CardTitle>
-                    {entityFilter.length > 0 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleClearAll}
-                        className="flex items-center gap-1 text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1 max-h-96 overflow-y-auto">
-                    {entityFilter.map((entityId) => (
-                      <div 
-                        key={entityId}
-                        className="flex items-center gap-2 p-1.5 border rounded hover:bg-muted/50"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-medium truncate">
-                            {getFriendlyName(entityId)}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium truncate">
+                              {getFriendlyName(entityId)}
+                            </div>
+                            <div className="text-xs text-muted-foreground truncate">
+                              {entityId}
+                            </div>
                           </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            {entityId}
-                          </div>
+                          
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleRemoveEntity(entityId)}
+                            className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <X className="h-2.5 w-2.5" />
+                          </Button>
                         </div>
-                        
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveEntity(entityId)}
-                          className="h-5 w-5 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <X className="h-2.5 w-2.5" />
-                        </Button>
-                      </div>
-                    ))}
-                    
-                    {entityFilter.length === 0 && (
-                      <div className="text-center py-6 text-muted-foreground">
-                        <p className="text-xs">No entities added</p>
-                        <p className="text-xs mt-1 opacity-75">Search and add entities to filter your dashboard</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {entityFilter.length > 0 && (
-                    <div className="mt-4 pt-4 border-t">
-                      <div className="text-xs text-muted-foreground text-center">
-                        {entityFilter.length} entities will be shown on the dashboard
-                      </div>
+                      ))}
+                      
+                      {entityFilter.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Plus className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-xs">No entities in filter yet</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          </div>
-
-          {/* Configuration Tabs */}
-          <div className="mt-8">
-            <Tabs defaultValue="filter" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="filter">Entity Filter</TabsTrigger>
-                <TabsTrigger value="groups">Group Management</TabsTrigger>
-                <TabsTrigger value="layout">Layout & Columns</TabsTrigger>
-                <TabsTrigger value="widgets">System Widgets</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="filter" className="mt-6">
-                <div className="text-center py-4 text-muted-foreground">
-                  <p>Entity filtering is managed above. Use the search and add sections to configure your entity filter.</p>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="groups" className="mt-6">
-                <GroupCustomization 
-                  filteredEntities={entityFilter}
-                  allEntities={allEntities || {}}
-                  getFriendlyName={getFriendlyName}
-                  getEntityType={getEntityType}
-                />
-              </TabsContent>
-              
-              <TabsContent value="layout" className="mt-6">
-                <LayoutCustomization />
-              </TabsContent>
-              
-              <TabsContent value="widgets" className="mt-6">
-                <SystemWidgetConfig />
-              </TabsContent>
-            </Tabs>
-          </div>
-        </>
-      )}
+          )}
+        </TabsContent>
+        
+        <TabsContent value="groups">
+          <GroupCustomization 
+            filteredEntities={filteredEntities}
+            allEntities={allEntities || {}}
+            getFriendlyName={getFriendlyName}
+            getEntityType={getEntityType}
+          />
+        </TabsContent>
+        
+        <TabsContent value="layout">
+          <LayoutCustomization />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

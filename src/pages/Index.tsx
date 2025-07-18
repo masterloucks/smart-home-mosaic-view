@@ -391,14 +391,14 @@ const Index = () => {
             </Button>
           </Link>
           
-          <Link to="/entity-filter">
+          <Link to="/settings">
             <Button
               variant="outline"
               size="sm"
               className="touch-target"
             >
               <Settings className="h-4 w-4 mr-2" />
-              Entity Filter
+              Settings
             </Button>
           </Link>
           

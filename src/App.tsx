@@ -19,7 +19,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/connection-test" element={<ConnectionTest />} />
-          <Route path="/entity-filter" element={<EntityFilterConfig />} />
+          <Route path="/settings" element={<EntityFilterConfig />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
