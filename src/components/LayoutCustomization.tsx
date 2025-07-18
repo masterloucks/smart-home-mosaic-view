@@ -53,7 +53,8 @@ export const LayoutCustomization = () => {
 
   const getColumnOptions = () => {
     const options = [];
-    for (let i = 1; i <= columns; i++) {
+    const columnCount = columns || 3;
+    for (let i = 1; i <= columnCount; i++) {
       options.push({ value: i.toString(), label: `Column ${i}` });
     }
     return options;
@@ -82,7 +83,7 @@ export const LayoutCustomization = () => {
           <div className="space-y-4">
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium">Number of columns:</label>
-              <Select value={columns.toString()} onValueChange={handleColumnChange}>
+              <Select value={columns?.toString() || "3"} onValueChange={handleColumnChange}>
                 <SelectTrigger className="w-32">
                   <SelectValue />
                 </SelectTrigger>
@@ -96,8 +97,8 @@ export const LayoutCustomization = () => {
             </div>
 
             {/* Column Preview */}
-            <div className="grid gap-2 mt-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-              {Array.from({ length: columns }, (_, i) => (
+            <div className="grid gap-2 mt-4" style={{ gridTemplateColumns: `repeat(${columns || 3}, 1fr)` }}>
+              {Array.from({ length: columns || 3 }, (_, i) => (
                 <div key={i} className="border rounded-lg p-3 bg-muted/30">
                   <div className="text-sm font-medium mb-2">Column {i + 1}</div>
                   <div className="text-xs text-muted-foreground">
@@ -143,7 +144,7 @@ export const LayoutCustomization = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">Column:</span>
                     <Select 
-                      value={group.column.toString()} 
+                      value={group.column?.toString() || "1"} 
                       onValueChange={(value) => handleGroupColumnChange(group.id, value)}
                     >
                       <SelectTrigger className="w-28">
@@ -206,7 +207,7 @@ export const LayoutCustomization = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Column:</span>
                   <Select 
-                    value={widget.column.toString()} 
+                    value={widget.column?.toString() || "1"} 
                     onValueChange={(value) => handleWidgetColumnChange(widget.id, value)}
                     disabled={!widget.enabled}
                   >
