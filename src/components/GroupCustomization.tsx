@@ -57,6 +57,12 @@ export const GroupCustomization = ({
   getFriendlyName, 
   getEntityType 
 }: GroupCustomizationProps) => {
+  console.log('GroupCustomization rendering with props:', {
+    addedEntitiesLength: addedEntities.length,
+    allEntitiesKeys: Object.keys(allEntities).length,
+    addedEntities: addedEntities.slice(0, 5), // First 5 for debugging
+  });
+
   const { 
     groups, 
     createGroup, 
@@ -68,8 +74,12 @@ export const GroupCustomization = ({
     reorderGroups 
   } = useGroupConfig();
 
+  console.log('Groups from useGroupConfig:', groups);
+
   const { removeEntity } = useEntityConfig();
   const { layoutConfig } = useLayoutConfig();
+  
+  console.log('Layout config:', layoutConfig);
   
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
@@ -80,6 +90,7 @@ export const GroupCustomization = ({
   const [editIcon, setEditIcon] = useState('activity');
 
   const ungroupedEntities = getUngroupedEntities(addedEntities);
+  console.log('Ungrouped entities:', ungroupedEntities);
 
   const handleCreateGroup = () => {
     if (!newGroupName.trim()) return;
