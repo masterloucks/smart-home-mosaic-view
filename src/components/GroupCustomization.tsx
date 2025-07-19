@@ -150,30 +150,7 @@ export const GroupCustomization = ({
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const { source, destination, draggableId } = result;
-    
-    // Handle entity drops into groups
-    if (draggableId.startsWith('entity-')) {
-      const entityId = draggableId.replace('entity-', '');
-      
-      // Check if dropped on a column - find the group by extracting from destination
-      if (destination.droppableId.startsWith('column-')) {
-        const columnNumber = parseInt(destination.droppableId.replace('column-', ''));
-        const columnGroups = groups.filter(g => g.column === columnNumber);
-        
-        // Add to the first group in that column, or show error if no groups
-        if (columnGroups.length > 0) {
-          handleAddToGroup(entityId, columnGroups[0].id);
-        } else {
-          toast({
-            title: "No Groups",
-            description: `Column ${columnNumber} has no groups. Create a group first.`,
-            variant: "destructive"
-          });
-        }
-        return;
-      }
-    }
+    const { source, destination } = result;
     
     // Handle group reordering within the same column
     if (source.droppableId === destination.droppableId && source.droppableId.startsWith('column-')) {
@@ -187,7 +164,7 @@ export const GroupCustomization = ({
       reorderGroups(groupIds);
     } else if (source.droppableId !== destination.droppableId && source.droppableId.startsWith('column-') && destination.droppableId.startsWith('column-')) {
       // Handle moving groups between columns
-      const groupId = draggableId;
+      const groupId = result.draggableId;
       const newColumn = parseInt(destination.droppableId.replace('column-', ''));
       
       updateGroup(groupId, { column: newColumn });
@@ -393,61 +370,45 @@ export const GroupCustomization = ({
           </CardHeader>
           <CardContent>
             <div className="space-y-2 max-h-40 overflow-y-auto">
-              <Droppable droppableId="ungrouped-entities">
-                {(provided) => (
-                  <div ref={provided.innerRef} {...provided.droppableProps}>
-                    {ungroupedEntities.map((entityId, index) => (
-                      <Draggable key={entityId} draggableId={`entity-${entityId}`} index={index}>
-                        {(provided, snapshot) => (
-                          <div 
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            className={`flex items-center gap-2 p-2 border rounded hover:bg-muted/50 cursor-grab ${
-                              snapshot.isDragging ? 'shadow-lg bg-primary/10' : ''
-                            } transition-all`}
-                          >
-                            <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium truncate">
-                                {getFriendlyName(entityId)}
-                              </div>
-                              <div className="text-xs text-muted-foreground truncate">
-                                {entityId} • {getEntityType(entityId)}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                              <Select onValueChange={(groupId) => handleAddToGroup(entityId, groupId)}>
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Add to..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {groups.map((group) => (
-                                    <SelectItem key={group.id} value={group.id}>
-                                      {group.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveEntity(entityId)}
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
+              {ungroupedEntities.map((entityId) => (
+                <div 
+                  key={entityId}
+                  className="flex items-center gap-2 p-2 border rounded hover:bg-muted/50"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium truncate">
+                      {getFriendlyName(entityId)}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {entityId} • {getEntityType(entityId)}
+                    </div>
                   </div>
-                )}
-              </Droppable>
+                  
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Select onValueChange={(groupId) => handleAddToGroup(entityId, groupId)}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Add to..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {groups.map((group) => (
+                          <SelectItem key={group.id} value={group.id}>
+                            {group.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveEntity(entityId)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -555,13 +516,6 @@ export const GroupCustomization = ({
                           {columnGroups.length === 0 && !snapshot.isDraggingOver && (
                             <div className="text-center text-muted-foreground text-sm py-8">
                               Drag groups here
-                            </div>
-                          )}
-                          
-                          {/* Show drop hint for entities */}
-                          {snapshot.isDraggingOver && (
-                            <div className="text-center text-primary text-sm py-4 border-t border-primary/30 mt-4">
-                              Drop entities here to add to first group
                             </div>
                           )}
                         </div>
