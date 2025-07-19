@@ -286,7 +286,7 @@ const Index = () => {
             </Button>
           </Link>
           
-          <Link to="/settings">
+          <Link to="/settings#entities">
             <Button
               variant="outline"
               size="sm"

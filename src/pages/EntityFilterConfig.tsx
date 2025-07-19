@@ -278,7 +278,7 @@ const EntityFilterConfig = () => {
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="connection" className="space-y-6">
+      <Tabs defaultValue={window.location.hash === '#entities' ? 'entities' : 'connection'} className="space-y-6">
         <TabsList className="grid grid-cols-4 w-[600px]">
           <TabsTrigger value="connection">Home Assistant</TabsTrigger>
           <TabsTrigger value="entities">Entity Filter</TabsTrigger>
