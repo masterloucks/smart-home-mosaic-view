@@ -155,11 +155,22 @@ export const GroupCustomization = ({
     // Handle entity drops into groups
     if (draggableId.startsWith('entity-')) {
       const entityId = draggableId.replace('entity-', '');
-      const targetGroupId = destination.droppableId.replace('group-', '');
       
-      // Only handle drops into group drop zones
-      if (destination.droppableId.startsWith('group-')) {
-        handleAddToGroup(entityId, targetGroupId);
+      // Check if dropped on a column - find the group by extracting from destination
+      if (destination.droppableId.startsWith('column-')) {
+        const columnNumber = parseInt(destination.droppableId.replace('column-', ''));
+        const columnGroups = groups.filter(g => g.column === columnNumber);
+        
+        // Add to the first group in that column, or show error if no groups
+        if (columnGroups.length > 0) {
+          handleAddToGroup(entityId, columnGroups[0].id);
+        } else {
+          toast({
+            title: "No Groups",
+            description: `Column ${columnNumber} has no groups. Create a group first.`,
+            variant: "destructive"
+          });
+        }
         return;
       }
     }
@@ -232,146 +243,122 @@ export const GroupCustomization = ({
   };
 
   const renderGroupCard = (group: CustomGroup, index: number) => (
-    <div key={group.id} className="space-y-2">
-      <Draggable draggableId={group.id} index={index}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.draggableProps}
-            className={`border rounded-lg p-3 bg-card ${
-              snapshot.isDragging ? 'shadow-lg rotate-2' : 'hover:bg-muted/50'
-            } transition-all`}
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <div {...provided.dragHandleProps}>
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                </div>
-                {getIconComponent(group.icon)}
-                <span className="font-medium">{group.name}</span>
-                <Badge variant="outline" className="text-xs">
-                  {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
-                </Badge>
+    <Draggable key={group.id} draggableId={group.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={`border rounded-lg p-3 mb-3 bg-card ${
+            snapshot.isDragging ? 'shadow-lg rotate-2' : 'hover:bg-muted/50'
+          } transition-all`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div {...provided.dragHandleProps}>
+                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
               </div>
+              {getIconComponent(group.icon)}
+              <span className="font-medium">{group.name}</span>
+              <Badge variant="outline" className="text-xs">
+                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Edit Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditGroup(group.id)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit3 className="h-4 w-4" />
+              </Button>
               
-              <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Edit Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleEditGroup(group.id)}
-                  className="h-8 w-8 p-0"
-                >
-                  <Edit3 className="h-4 w-4" />
+              {/* Delete Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteGroup(group.id, group.name)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Edit Form */}
+          {editingGroup === group.id && (
+            <div className="mt-3 p-3 border rounded bg-muted/30 space-y-3">
+              <div>
+                <label className="text-sm font-medium">Group Name</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter group name..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Icon</label>
+                <Select value={editIcon} onValueChange={setEditIcon}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ICON_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <option.icon className="h-4 w-4" />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveEdit} disabled={!editName.trim()}>
+                  Save
                 </Button>
-                
-                {/* Delete Button */}
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteGroup(group.id, group.name)}
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="h-4 w-4" />
+                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                  Cancel
                 </Button>
               </div>
             </div>
-            
-            {/* Edit Form */}
-            {editingGroup === group.id && (
-              <div className="mt-3 p-3 border rounded bg-muted/30 space-y-3">
-                <div>
-                  <label className="text-sm font-medium">Group Name</label>
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    placeholder="Enter group name..."
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Icon</label>
-                  <Select value={editIcon} onValueChange={setEditIcon}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ICON_OPTIONS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          <div className="flex items-center gap-2">
-                            <option.icon className="h-4 w-4" />
-                            {option.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleSaveEdit} disabled={!editName.trim()}>
-                    Save
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Group Entities */}
-            {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
-              <div className="space-y-1 mt-2">
-                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
-                  <div
-                    key={entityId}
-                    className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
+          )}
+          
+          {/* Group Entities */}
+          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
+            <div className="space-y-1 mt-2">
+              {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
+                <div
+                  key={entityId}
+                  className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
+                >
+                  <span className="truncate">
+                    {getFriendlyName(entityId)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFromGroup(entityId, group.id)}
+                    className="h-5 w-5 p-0 text-destructive hover:text-destructive"
                   >
-                    <span className="truncate">
-                      {getFriendlyName(entityId)}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveFromGroup(entityId, group.id)}
-                      className="h-5 w-5 p-0 text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-2.5 w-2.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-            
-            {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
-              <div className="text-xs text-muted-foreground italic mt-2">
-                No entities assigned
-              </div>
-            )}
-          </div>
-        )}
-      </Draggable>
-      
-      {/* Drop zone for entities */}
-      <Droppable droppableId={`group-${group.id}`}>
-        {(provided, snapshot) => (
-          <div
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-            className={`min-h-[40px] border-2 border-dashed rounded-lg transition-colors ${
-              snapshot.isDraggingOver 
-                ? 'border-primary bg-primary/20' 
-                : 'border-transparent'
-            }`}
-          >
-            {snapshot.isDraggingOver && (
-              <div className="text-center text-primary text-xs py-2">
-                Drop to add to {group.name}
-              </div>
-            )}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
-    </div>
+                    <Trash2 className="h-2.5 w-2.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
+            <div className="text-xs text-muted-foreground italic mt-2">
+              No entities assigned
+            </div>
+          )}
+        </div>
+      )}
+    </Draggable>
   );
 
   return (
@@ -568,6 +555,13 @@ export const GroupCustomization = ({
                           {columnGroups.length === 0 && !snapshot.isDraggingOver && (
                             <div className="text-center text-muted-foreground text-sm py-8">
                               Drag groups here
+                            </div>
+                          )}
+                          
+                          {/* Show drop hint for entities */}
+                          {snapshot.isDraggingOver && (
+                            <div className="text-center text-primary text-sm py-4 border-t border-primary/30 mt-4">
+                              Drop entities here to add to first group
                             </div>
                           )}
                         </div>
