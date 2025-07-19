@@ -139,15 +139,30 @@ export const GroupCustomization = ({
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const groupIds = groups.map(g => g.id);
-    const [reorderedId] = groupIds.splice(result.source.index, 1);
-    groupIds.splice(result.destination.index, 0, reorderedId);
+    const { source, destination } = result;
     
-    reorderGroups(groupIds);
-    toast({
-      title: "Groups Reordered",
-      description: "Group order has been updated",
-    });
+    // Handle reordering within the same column
+    if (source.droppableId === destination.droppableId) {
+      const columnNumber = parseInt(source.droppableId.replace('column-', ''));
+      const columnGroups = groups.filter(g => g.column === columnNumber);
+      const [reorderedGroup] = columnGroups.splice(source.index, 1);
+      columnGroups.splice(destination.index, 0, reorderedGroup);
+      
+      // Update order by group IDs
+      const groupIds = columnGroups.map(g => g.id);
+      reorderGroups(groupIds);
+    } else {
+      // Handle moving between columns
+      const groupId = result.draggableId;
+      const newColumn = parseInt(destination.droppableId.replace('column-', ''));
+      
+      updateGroup(groupId, { column: newColumn });
+      
+      toast({
+        title: "Group Moved",
+        description: `Moved group to column ${newColumn}`,
+      });
+    }
   };
 
   const handleEditGroup = (groupId: string) => {
@@ -179,13 +194,6 @@ export const GroupCustomization = ({
     setEditIcon('activity');
   };
 
-  const handleColumnChange = (groupId: string, column: number) => {
-    updateGroup(groupId, { column });
-    toast({
-      title: "Column Updated",
-      description: `Moved group to column ${column}`,
-    });
-  };
 
   const getIconComponent = (iconName: string) => {
     const iconOption = ICON_OPTIONS.find(opt => opt.value === iconName);
@@ -195,6 +203,129 @@ export const GroupCustomization = ({
     }
     return <Activity className="h-4 w-4" />;
   };
+
+  const getGroupsByColumn = (columnNumber: number) => {
+    return groups.filter(group => group.column === columnNumber);
+  };
+
+  const renderGroupCard = (group: CustomGroup, index: number) => (
+    <Draggable key={group.id} draggableId={group.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          className={`border rounded-lg p-3 mb-3 bg-card ${
+            snapshot.isDragging ? 'shadow-lg rotate-2' : 'hover:bg-muted/50'
+          } transition-all`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div {...provided.dragHandleProps}>
+                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+              </div>
+              {getIconComponent(group.icon)}
+              <span className="font-medium">{group.name}</span>
+              <Badge variant="outline" className="text-xs">
+                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Edit Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEditGroup(group.id)}
+                className="h-8 w-8 p-0"
+              >
+                <Edit3 className="h-4 w-4" />
+              </Button>
+              
+              {/* Delete Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDeleteGroup(group.id, group.name)}
+                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Edit Form */}
+          {editingGroup === group.id && (
+            <div className="mt-3 p-3 border rounded bg-muted/30 space-y-3">
+              <div>
+                <label className="text-sm font-medium">Group Name</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter group name..."
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Icon</label>
+                <Select value={editIcon} onValueChange={setEditIcon}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ICON_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        <div className="flex items-center gap-2">
+                          <option.icon className="h-4 w-4" />
+                          {option.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={handleSaveEdit} disabled={!editName.trim()}>
+                  Save
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Group Entities */}
+          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
+            <div className="space-y-1 mt-2">
+              {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
+                <div
+                  key={entityId}
+                  className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
+                >
+                  <span className="truncate">
+                    {getFriendlyName(entityId)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveFromGroup(entityId, group.id)}
+                    className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-2.5 w-2.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
+            <div className="text-xs text-muted-foreground italic mt-2">
+              No entities assigned
+            </div>
+          )}
+        </div>
+      )}
+    </Draggable>
+  );
 
   return (
     <div className="space-y-6">
@@ -337,155 +468,52 @@ export const GroupCustomization = ({
         
         <CardContent>
           <DragDropContext onDragEnd={handleDragEnd}>
-            <Droppable droppableId="groups">
-              {(provided) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className="space-y-3"
-                >
-                  {groups.map((group, index) => (
-                    <Draggable key={group.id} draggableId={group.id} index={index}>
+            <div 
+              className="grid gap-6"
+              style={{ 
+                gridTemplateColumns: `repeat(${layoutConfig?.columns || 3}, 1fr)` 
+              }}
+            >
+              {Array.from({ length: layoutConfig?.columns || 3 }, (_, columnIndex) => {
+                const columnNumber = columnIndex + 1;
+                const columnGroups = getGroupsByColumn(columnNumber);
+                
+                return (
+                  <div key={columnNumber} className="space-y-2">
+                    <div className="text-center">
+                      <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                        Column {columnNumber}
+                      </h3>
+                    </div>
+                    
+                    <Droppable droppableId={`column-${columnNumber}`}>
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          className={`border rounded-lg p-3 ${
-                            snapshot.isDragging ? 'shadow-lg' : 'hover:bg-muted/50'
+                          {...provided.droppableProps}
+                          className={`min-h-[200px] p-3 border-2 border-dashed rounded-lg transition-colors ${
+                            snapshot.isDraggingOver 
+                              ? 'border-primary bg-primary/10' 
+                              : 'border-muted-foreground/30 bg-muted/20'
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <div {...provided.dragHandleProps}>
-                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
-                              </div>
-                              {getIconComponent(group.icon)}
-                              <span className="font-medium">{group.name}</span>
-                              <Badge variant="outline" className="text-xs">
-                                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
-                              </Badge>
-                              <Badge variant="secondary" className="text-xs">
-                                Col {group.column || 1}
-                              </Badge>
-                            </div>
-                            
-                            <div className="flex items-center gap-1 flex-shrink-0">
-                              {/* Column Assignment */}
-                              <Select 
-                                value={(group.column || 1).toString()} 
-                                onValueChange={(value) => handleColumnChange(group.id, parseInt(value))}
-                              >
-                                <SelectTrigger className="w-16 h-8">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {Array.from({ length: layoutConfig?.columns || 3 }, (_, i) => i + 1).map((col) => (
-                                    <SelectItem key={col} value={col.toString()}>
-                                      {col}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              
-                              {/* Edit Button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditGroup(group.id)}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </Button>
-                              
-                              {/* Delete Button */}
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteGroup(group.id, group.name)}
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          {/* Edit Form */}
-                          {editingGroup === group.id && (
-                            <div className="mt-3 p-3 border rounded bg-muted/30 space-y-3">
-                              <div>
-                                <label className="text-sm font-medium">Group Name</label>
-                                <Input
-                                  value={editName}
-                                  onChange={(e) => setEditName(e.target.value)}
-                                  placeholder="Enter group name..."
-                                />
-                              </div>
-                              <div>
-                                <label className="text-sm font-medium">Icon</label>
-                                <Select value={editIcon} onValueChange={setEditIcon}>
-                                  <SelectTrigger>
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {ICON_OPTIONS.map((option) => (
-                                      <SelectItem key={option.value} value={option.value}>
-                                        <div className="flex items-center gap-2">
-                                          <option.icon className="h-4 w-4" />
-                                          {option.label}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" onClick={handleSaveEdit} disabled={!editName.trim()}>
-                                  Save
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={handleCancelEdit}>
-                                  Cancel
-                                </Button>
-                              </div>
-                            </div>
+                          {columnGroups.map((group, index) => 
+                            renderGroupCard(group, index)
                           )}
+                          {provided.placeholder}
                           
-                          {/* Group Entities */}
-                          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
-                            <div className="space-y-1 mt-2">
-                              {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
-                                <div
-                                  key={entityId}
-                                  className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
-                                >
-                                  <span className="truncate">
-                                    {getFriendlyName(entityId)}
-                                  </span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveFromGroup(entityId, group.id)}
-                                    className="h-5 w-5 p-0 text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-2.5 w-2.5" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
-                            <div className="text-xs text-muted-foreground italic mt-2">
-                              No entities assigned
+                          {columnGroups.length === 0 && !snapshot.isDraggingOver && (
+                            <div className="text-center text-muted-foreground text-sm py-8">
+                              Drag groups here
                             </div>
                           )}
                         </div>
                       )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+                    </Droppable>
+                  </div>
+                );
+              })}
+            </div>
           </DragDropContext>
         </CardContent>
       </Card>
