@@ -261,21 +261,16 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background p-4 lg:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Home className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold">Home Dashboard</h1>
-            <p className="text-sm text-muted-foreground">
-              Smart Home Control Center
-            </p>
-          </div>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Home className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold">Home Dashboard</h1>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Badge 
             variant={isConnected ? "default" : "destructive"}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 text-xs px-2 py-1"
           >
             {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {isConnected ? 'Connected' : 'Disconnected'}
@@ -285,10 +280,9 @@ const Index = () => {
             <Button
               variant="outline"
               size="sm"
-              className="touch-target"
+              className="h-8 px-2"
             >
-              <Bug className="h-4 w-4 mr-2" />
-              Test Connection
+              <Bug className="h-3 w-3" />
             </Button>
           </Link>
           
@@ -296,10 +290,9 @@ const Index = () => {
             <Button
               variant="outline"
               size="sm"
-              className="touch-target"
+              className="h-8 px-2"
             >
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+              <Settings className="h-3 w-3" />
             </Button>
           </Link>
           
@@ -308,9 +301,9 @@ const Index = () => {
             size="sm"
             onClick={refreshEntities}
             disabled={isLoading || !isConfigured}
-            className="touch-target"
+            className="h-8 px-2"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>
