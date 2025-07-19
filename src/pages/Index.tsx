@@ -266,13 +266,15 @@ const Index = () => {
         </div>
         
         <div className="flex items-center gap-2">
-          <Badge 
-            variant={isConnected ? "default" : "destructive"}
-            className="flex items-center gap-1 text-xs px-2 py-1"
-          >
-            {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-            {isConnected ? 'Connected' : 'Disconnected'}
-          </Badge>
+          <Link to="/settings">
+            <Button
+              variant={isConnected ? "default" : "destructive"}
+              size="sm"
+              className="h-8 w-8 p-0"
+            >
+              {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+            </Button>
+          </Link>
           
           <Link to="/connection-test">
             <Button
