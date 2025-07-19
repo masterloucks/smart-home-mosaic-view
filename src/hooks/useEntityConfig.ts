@@ -34,7 +34,6 @@ const DEFAULT_ENTITY_FILTER = [
 
 export const useEntityConfig = () => {
   const [entityFilter, setEntityFilter] = useState<string[]>([]);  // Start with empty array
-  const [isFilterEnabled, setIsFilterEnabled] = useState(true);
 
   // Load configuration from localStorage
   useEffect(() => {
@@ -43,7 +42,6 @@ export const useEntityConfig = () => {
       try {
         const config = JSON.parse(saved);
         setEntityFilter(config.entityFilter || []);
-        setIsFilterEnabled(config.isFilterEnabled ?? true);
       } catch (error) {
         console.error('Failed to load entity filter config:', error);
       }
@@ -51,34 +49,30 @@ export const useEntityConfig = () => {
   }, []);
 
   // Save configuration to localStorage
-  const saveConfig = (newFilter: string[], enabled: boolean) => {
+  const saveConfig = (newFilter: string[]) => {
     const config = {
-      entityFilter: newFilter,
-      isFilterEnabled: enabled
+      entityFilter: newFilter
     };
     localStorage.setItem('entity_filter_config', JSON.stringify(config));
     setEntityFilter(newFilter);
-    setIsFilterEnabled(enabled);
   };
 
   const getEffectiveFilter = () => {
-    // Only return filter if enabled AND has entities, otherwise return empty array to show nothing
-    return isFilterEnabled && entityFilter.length > 0 ? entityFilter : [];
+    // Return filter if has entities, otherwise return empty array to show nothing
+    return entityFilter.length > 0 ? entityFilter : [];
   };
 
   return {
     entityFilter,
-    isFilterEnabled,
-    setEntityFilter: (filter: string[]) => saveConfig(filter, isFilterEnabled),
-    setIsFilterEnabled: (enabled: boolean) => saveConfig(entityFilter, enabled),
+    setEntityFilter: (filter: string[]) => saveConfig(filter),
     getEffectiveFilter,
     addEntity: (entityId: string) => {
       if (!entityFilter.includes(entityId)) {
-        saveConfig([...entityFilter, entityId], isFilterEnabled);
+        saveConfig([...entityFilter, entityId]);
       }
     },
     removeEntity: (entityId: string) => {
-      saveConfig(entityFilter.filter(id => id !== entityId), isFilterEnabled);
+      saveConfig(entityFilter.filter(id => id !== entityId));
     }
   };
 };

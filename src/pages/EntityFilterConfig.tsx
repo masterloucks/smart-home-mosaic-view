@@ -22,9 +22,7 @@ const EntityFilterConfig = () => {
   const { config, isConfigured } = useSecureConfig();
   const { 
     entityFilter, 
-    isFilterEnabled, 
     setEntityFilter, 
-    setIsFilterEnabled, 
     addEntity, 
     removeEntity 
   } = useEntityConfig();
@@ -260,20 +258,6 @@ const EntityFilterConfig = () => {
               Configure your Home Assistant connection and manage entities
             </p>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox 
-              checked={isFilterEnabled}
-              onCheckedChange={setIsFilterEnabled}
-            />
-            Enable Filtering
-          </label>
-          
-          <Badge variant={isFilterEnabled ? "default" : "secondary"}>
-            {isFilterEnabled ? `${entityFilter.length} entities filtered` : 'Filter disabled'}
-          </Badge>
         </div>
       </div>
 

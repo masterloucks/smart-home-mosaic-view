@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Plus, Filter, Check } from 'lucide-react';
@@ -16,9 +16,7 @@ interface EntityFilterConfigProps {
 export const EntityFilterConfig = ({ availableEntities = [] }: EntityFilterConfigProps) => {
   const { 
     entityFilter, 
-    isFilterEnabled, 
     setEntityFilter, 
-    setIsFilterEnabled,
     removeEntity 
   } = useEntityConfig();
   
@@ -121,20 +119,8 @@ export const EntityFilterConfig = ({ availableEntities = [] }: EntityFilterConfi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Enable/Disable Filter */}
-        <div className="flex items-center justify-between">
-          <Label htmlFor="filter-enabled">Enable Entity Filtering</Label>
-          <Switch
-            id="filter-enabled"
-            checked={isFilterEnabled}
-            onCheckedChange={setIsFilterEnabled}
-          />
-        </div>
-
-        {isFilterEnabled && (
-          <>
-            {/* Current Entities */}
-            <div>
+        {/* Current Entities */}
+        <div>
               <Label className="text-sm font-medium">Filtered Entities ({entityFilter.length})</Label>
               <div className="flex flex-wrap gap-2 mt-2 p-3 bg-muted rounded-md max-h-40 overflow-y-auto">
                 {entityFilter.map((entityId) => (
@@ -222,14 +208,12 @@ export const EntityFilterConfig = ({ availableEntities = [] }: EntityFilterConfi
               </Button>
             </div>
 
-            <div className="text-xs text-muted-foreground">
-              <p>
-                Only entities in this list will be displayed. Leave empty or disable filtering to show all entities.
-                Changes take effect after reconnecting to Home Assistant.
-              </p>
-            </div>
-          </>
-        )}
+        <div className="text-xs text-muted-foreground">
+          <p>
+            Only entities in this list will be displayed. Leave empty to show all entities.
+            Changes take effect after reconnecting to Home Assistant.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
