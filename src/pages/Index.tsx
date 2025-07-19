@@ -5,8 +5,6 @@ import { useEntityConfig } from '@/hooks/useEntityConfig';
 import { useLayoutConfig } from '@/hooks/useLayoutConfig';
 import { useGroupConfig } from '@/hooks/useGroupConfig';
 import { DeviceGroup } from '@/components/DeviceGroup';
-import { SecurityConfig } from '@/components/SecurityConfig';
-import { EntityFilterConfig } from '@/components/EntityFilterConfig';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -308,18 +306,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Security Configuration */}
-      {!isConfigured && (
-        <div className="mb-6">
-          <SecurityConfig onConfigSaved={setConfig} isConnected={isConnected} />
-        </div>
-      )}
-      
-      {isConfigured && !isConnected && (
-        <div className="mb-6">
-          <SecurityConfig onConfigSaved={setConfig} isConnected={isConnected} />
-        </div>
-      )}
 
       {/* Main Grid Layout - Dynamic Columns */}
       <div 
