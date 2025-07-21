@@ -76,7 +76,7 @@ export const GroupCustomization = ({
 
   console.log('Groups from useGroupConfig:', groups);
 
-  const { removeEntity } = useEntityConfig();
+  const { entityFilter, removeEntity } = useEntityConfig();
   const { layoutConfig } = useLayoutConfig();
   
   console.log('Layout config:', layoutConfig);
@@ -89,7 +89,9 @@ export const GroupCustomization = ({
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('activity');
 
-  const ungroupedEntities = getUngroupedEntities(addedEntities);
+  // Use current entityFilter instead of addedEntities prop for real-time updates
+  const currentEntities = entityFilter.length > 0 ? entityFilter : addedEntities;
+  const ungroupedEntities = getUngroupedEntities(currentEntities);
   console.log('Ungrouped entities:', ungroupedEntities);
 
   const handleCreateGroup = () => {
@@ -258,7 +260,7 @@ export const GroupCustomization = ({
               {getIconComponent(group.icon)}
               <span className="font-medium">{group.name}</span>
               <Badge variant="outline" className="text-xs">
-                {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length} entities
+                {group.entityIds.filter(entityId => currentEntities.includes(entityId)).length} entities
               </Badge>
             </div>
             
@@ -326,9 +328,9 @@ export const GroupCustomization = ({
           )}
           
           {/* Group Entities */}
-          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length > 0 && (
+          {group.entityIds.filter(entityId => currentEntities.includes(entityId)).length > 0 && (
             <div className="space-y-1 mt-2">
-              {group.entityIds.filter(entityId => addedEntities.includes(entityId)).map((entityId) => (
+              {group.entityIds.filter(entityId => currentEntities.includes(entityId)).map((entityId) => (
                 <div
                   key={entityId}
                   className="flex items-center justify-between text-sm p-1 rounded hover:bg-muted/30"
@@ -349,7 +351,7 @@ export const GroupCustomization = ({
             </div>
           )}
           
-          {group.entityIds.filter(entityId => addedEntities.includes(entityId)).length === 0 && (
+          {group.entityIds.filter(entityId => currentEntities.includes(entityId)).length === 0 && (
             <div className="text-xs text-muted-foreground italic mt-2">
               No entities assigned - drag entities here
             </div>
