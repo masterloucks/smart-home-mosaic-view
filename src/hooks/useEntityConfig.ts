@@ -53,6 +53,7 @@ export const useEntityConfig = () => {
     const config = {
       entityFilter: newFilter
     };
+    console.log('saveConfig called:', { newFilter, config });
     localStorage.setItem('entity_filter_config', JSON.stringify(config));
     setEntityFilter(newFilter);
   };
@@ -64,7 +65,10 @@ export const useEntityConfig = () => {
 
   return {
     entityFilter,
-    setEntityFilter: (filter: string[]) => saveConfig(filter),
+    setEntityFilter: (filter: string[]) => {
+      console.log('setEntityFilter called directly:', { filter });
+      saveConfig(filter);
+    },
     getEffectiveFilter,
     addEntity: (entityId: string) => {
       console.log('addEntity called:', { entityId, currentFilter: entityFilter });
