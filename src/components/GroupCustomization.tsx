@@ -76,7 +76,7 @@ export const GroupCustomization = ({
 
   console.log('Groups from useGroupConfig:', groups);
 
-  const { entityFilter, removeEntity } = useEntityConfig();
+  const { entityFilter, removeEntity, setEntityFilter } = useEntityConfig();
   const { layoutConfig } = useLayoutConfig();
   
   console.log('Layout config:', layoutConfig);
@@ -142,7 +142,10 @@ export const GroupCustomization = ({
   };
 
   const handleRemoveAllUngrouped = () => {
-    ungroupedEntities.forEach(entityId => removeEntity(entityId));
+    const filteredEntities = currentEntities.filter(entityId => 
+      !ungroupedEntities.includes(entityId)
+    );
+    setEntityFilter(filteredEntities);
     toast({
       title: "All Entities Removed",
       description: `Removed ${ungroupedEntities.length} ungrouped entities from added entities`,
