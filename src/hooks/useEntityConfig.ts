@@ -67,12 +67,18 @@ export const useEntityConfig = () => {
     setEntityFilter: (filter: string[]) => saveConfig(filter),
     getEffectiveFilter,
     addEntity: (entityId: string) => {
+      console.log('addEntity called:', { entityId, currentFilter: entityFilter });
       if (!entityFilter.includes(entityId)) {
-        saveConfig([...entityFilter, entityId]);
+        const newFilter = [...entityFilter, entityId];
+        console.log('addEntity newFilter:', newFilter);
+        saveConfig(newFilter);
       }
     },
     removeEntity: (entityId: string) => {
-      saveConfig(entityFilter.filter(id => id !== entityId));
+      console.log('removeEntity called:', { entityId, currentFilter: entityFilter });
+      const newFilter = entityFilter.filter(id => id !== entityId);
+      console.log('removeEntity newFilter:', newFilter);
+      saveConfig(newFilter);
     }
   };
 };

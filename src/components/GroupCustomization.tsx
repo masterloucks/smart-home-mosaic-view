@@ -92,6 +92,14 @@ export const GroupCustomization = ({
   // Use entityFilter as the single source of truth for current entities
   const currentEntities = entityFilter;
   const ungroupedEntities = getUngroupedEntities(currentEntities);
+  
+  console.log('GroupCustomization Debug:', {
+    entityFilterLength: entityFilter.length,
+    currentEntitiesLength: currentEntities.length,
+    ungroupedEntitiesLength: ungroupedEntities.length,
+    entityFilter: entityFilter.slice(0, 5), // First 5 for debugging
+    ungroupedEntities: ungroupedEntities.slice(0, 5) // First 5 for debugging
+  });
   console.log('Ungrouped entities:', ungroupedEntities);
 
   const handleCreateGroup = () => {
