@@ -89,8 +89,8 @@ export const GroupCustomization = ({
   const [editName, setEditName] = useState('');
   const [editIcon, setEditIcon] = useState('activity');
 
-  // Use current entityFilter instead of addedEntities prop for real-time updates
-  const currentEntities = entityFilter.length > 0 ? entityFilter : addedEntities;
+  // Use entityFilter as the single source of truth for current entities
+  const currentEntities = entityFilter;
   const ungroupedEntities = getUngroupedEntities(currentEntities);
   console.log('Ungrouped entities:', ungroupedEntities);
 
